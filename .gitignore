@@ -1,0 +1,10 @@
+node_modules/
+.dart_tool/
+build/
+.pgdata/
+supabase/.temp/
+supabase/.branches/
+.idea/
+*.iml
+# Old Firebase client config (project no longer used; FCM comes back with nudges)
+google-services.json

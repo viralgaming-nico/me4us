@@ -1,0 +1,16 @@
+name: core_auth
+description: Sign-in and session state for Me4Us.
+version: 0.0.1
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.13.7
+  flutter: ">=1.17.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

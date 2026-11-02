@@ -1,0 +1,12 @@
+name: me4us_workspace
+publish_to: none
+environment:
+  sdk: ^3.13.0
+workspace:
+  - apps/me4us
+  - packages/core_auth
+  - packages/core_union
+dev_dependencies:
+  melos: ^8.10.0
+melos:
+  name: me4us
