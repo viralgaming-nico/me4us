@@ -7,6 +7,14 @@ class AuthUser {
   final String? displayName;
 }
 
+/// Sign-up worked but the project requires the email to be confirmed before a session exists.
+class EmailConfirmationRequired implements Exception {
+  const EmailConfirmationRequired();
+
+  @override
+  String toString() => 'EmailConfirmationRequired';
+}
+
 abstract class AuthRepository {
   /// Emits the signed-in user, or null when signed out.
   Stream<AuthUser?> get authState;
@@ -61,9 +69,8 @@ class SupabaseAuthRepository implements AuthRepository {
       password: password,
       data: displayName == null ? null : {'display_name': displayName},
     );
-    final user = _map(r.user);
-    if (user == null) throw StateError('Sign-up returned no user.');
-    return user;
+    if (r.session == null) throw const EmailConfirmationRequired();
+    return _map(r.user)!;
   }
 
   @override

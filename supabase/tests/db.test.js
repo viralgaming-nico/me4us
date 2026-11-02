@@ -29,6 +29,7 @@ before(async () => {
   await admin.connect();
   await admin.query(readFileSync(here('./shim.sql'), 'utf8'));
   await admin.query(readFileSync(here('../migrations/20261102000000_init.sql'), 'utf8'));
+  await admin.query(readFileSync(here('../migrations/20261102010000_onboarding_and_invites.sql'), 'utf8'));
 });
 
 after(async () => {
@@ -269,5 +270,35 @@ describe('redeem_invite', () => {
   });
   it('requires sign-in', async () => {
     await denied(null, `select * from public.redeem_invite('ABC')`);
+  });
+});
+
+describe('onboarding flag and new_invite', () => {
+  it('member sets own onboarded flag only', async () => {
+    await ok(V, `update public.members set onboarded = true where user_id = $1`, [V]);
+    assert.equal((await admin.query('select onboarded from public.members where user_id = $1', [V])).rows[0].onboarded, true);
+    await noRows(V, `update public.members set onboarded = true where user_id = $1`, [U]);
+  });
+  it('owner gets a fresh code that replaces the old one', async () => {
+    const first = (await ok(U, 'select * from public.new_invite()')).rows[0];
+    assert.equal(first.status, 'ok');
+    assert.match(first.invite_code, /^[A-HJKMNP-Z2-9]{8}$/);
+    const second = (await ok(U, 'select * from public.new_invite()')).rows[0];
+    const codes = (await admin.query('select code, uses_left from public.invites where union_id = $1', [UN])).rows;
+    assert.deepEqual(codes, [{ code: second.invite_code, uses_left: 1 }]); // 2 members -> 1 seat left
+  });
+  it('a code from new_invite can be redeemed', async () => {
+    const { invite_code } = (await ok(U, 'select * from public.new_invite()')).rows[0];
+    const r = (await ok(W, 'select * from public.redeem_invite($1)', [invite_code])).rows[0];
+    assert.deepEqual(r, { status: 'ok', union_id: UN });
+  });
+  it('non-owner and outsider are refused; full union has no seat', async () => {
+    assert.equal((await ok(V, 'select * from public.new_invite()')).rows[0].status, 'not_owner');
+    assert.equal((await ok(X, 'select * from public.new_invite()')).rows[0].status, 'not_owner');
+    await admin.query('update public.unions set member_count = 3 where id = $1', [UN]);
+    assert.equal((await ok(U, 'select * from public.new_invite()')).rows[0].status, 'full');
+  });
+  it('requires sign-in', async () => {
+    await denied(null, 'select * from public.new_invite()');
   });
 });

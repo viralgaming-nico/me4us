@@ -8,6 +8,7 @@ class Member {
     this.acceptsFlags = false,
     this.hygieneAlerts = false,
     this.points = 0,
+    this.onboarded = false,
   });
 
   final String uid;
@@ -16,6 +17,7 @@ class Member {
   final bool acceptsFlags;
   final bool hygieneAlerts;
   final int points;
+  final bool onboarded;
 
   /// Builds a member from a `members` table row (snake_case columns).
   factory Member.fromRow(Map<String, dynamic> r) => Member(
@@ -25,5 +27,6 @@ class Member {
         acceptsFlags: r['accepts_flags'] == true,
         hygieneAlerts: r['hygiene_alerts'] == true,
         points: (r['points'] as num?)?.toInt() ?? 0,
+        onboarded: r['onboarded'] == true,
       );
 }
