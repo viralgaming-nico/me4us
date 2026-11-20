@@ -1,0 +1,367 @@
+me4us — PART 1: ME
+You can't have US, if there's no ME.
+
+FOUNDATION
+The foundation of me4us is the individual. The app begins with self-care, self-awareness and personal growth: being a better person to yourself so you can be a better partner and parent.
+
+The airplane analogy captures the philosophy: put your oxygen mask on first, then help others. Taking care of yourself is not selfish; it is part of being able to show up for others.
+
+Part 1 should be a complete experience on its own, not a chore or prerequisite for unlocking the relationship portions.
+
+1. WHAT ME ACCOMPLISHES: SIX PILLARS
+
+1) PHYSICAL WELL-BEING — MY BODY
+Sleep, energy, movement, nutrition, hydration, physical health, rest and habits.
+
+2) MENTAL & EMOTIONAL WELL-BEING — MY MIND
+Stress, emotions, anxiety, frustration, self-awareness, coping mechanisms, emotional regulation and mental load.
+
+3) PERSONAL IDENTITY — WHO I AM
+Values, interests, passions, individuality, personal goals, hobbies, confidence and identity beyond roles.
+
+4) GROWTH & PURPOSE — WHO I WANT TO BECOME
+Learning, ambition, personal goals, skills, discipline, achievements and purpose.
+
+5) SELF-RESPECT & BOUNDARIES — HOW I TREAT MYSELF
+Boundaries, self-talk, self-worth, saying no, recognizing needs, personal responsibility and accountability.
+
+6) LIFE & SOCIAL WELL-BEING — MY LIFE OUTSIDE MY ROLES
+Friendships, finances, environment, fun, social connections, life satisfaction and everyday responsibilities.
+
+These are lenses for examining life, not six more obligations.
+
+2. WHAT ME SHOULD ASK
+
+INITIAL ASSESSMENT: 12 QUESTIONS
+1. How are you feeling lately, honestly?
+2. How much energy do you have on an average day?
+3. How well have you been sleeping?
+4. How often do you make time for yourself?
+5. How stressed do you feel lately?
+6. Are you doing things you genuinely enjoy?
+7. How satisfied are you with the person you're becoming?
+8. How do you speak to yourself when you make a mistake?
+9. Do you feel you can say no when you need to?
+10. Are there things you've been avoiding that weigh on you?
+11. When was the last time you did something just for yourself?
+12. What is one thing you wish were different in your life right now?
+
+Use a mixture of scales, choices and optional free text. Avoid making users feel diagnosed, judged or graded.
+
+PILLAR QUESTION BANKS
+
+MY BODY
+- How many hours did you sleep last night?
+- How rested do you feel when you wake up?
+- How often are you physically active?
+- Have you been drinking enough water?
+- How would you describe your eating habits lately?
+- How much time have you spent outside this week?
+- Are you experiencing physical discomfort you have been ignoring?
+- Have you scheduled the health appointments you need?
+- Do you have a consistent bedtime?
+- How often do you feel physically exhausted?
+
+Functions: sleep, water, movement and exercise tracking; routines; rest days; personal health reminders; habit building. Weight, calories and body size should not be central measures.
+
+MY MIND & EMOTIONS
+- What emotions have you experienced most this week?
+- What has been bothering you?
+- What is consuming the most mental energy?
+- What makes you feel calm?
+- How do you usually respond when you're angry?
+- How do you react when you feel overwhelmed?
+- Do you feel you have someone you can talk to?
+- What are you worrying about that you cannot control?
+- Have you been mentally exhausted?
+- What do you need right now that you haven't been giving yourself?
+
+Functions: mood logging, emotion identification, stress tracking, trigger identification, guided breathing, journaling, thought reframing, decompression and reflection.
+
+FEATURE: WHAT'S UNDERNEATH?
+Help users explore anger or frustration:
+- Am I angry, or hurt?
+- Do I feel ignored?
+- Am I exhausted?
+- Am I feeling unfairly treated?
+- Is something outside my control making me feel powerless?
+- Do I need to act, or do I need to let this go?
+
+The app should help users explore, not dictate their feelings.
+
+WHO AM I?
+- What do you enjoy doing?
+- What are you curious about?
+- What hobby have you abandoned?
+- What makes you feel alive?
+- What did you enjoy before life became so busy?
+- What would you do if you had three free hours?
+- What do you wish people knew about you?
+- Are you spending time with people who make you feel good?
+- Do you feel like you're living your life, or just fulfilling obligations?
+- What part of yourself have you neglected?
+
+Functions: personal interest inventory, hobby rediscovery, personal time scheduling, bucket list, experiences, social connection goals and activity suggestions.
+
+FEATURE: THE FORGOTTEN ME
+Periodically resurface interests or goals the user mentioned but neglected.
+Example: “You mentioned three months ago that you wanted to learn guitar. How about 30 minutes for something that belongs only to you?”
+
+GROWTH & PURPOSE
+- What do you want to accomplish this year?
+- What skill do you want to learn?
+- What is something you've been putting off?
+- What would make you proud six months from now?
+- What are you currently working toward?
+- Are you making progress?
+- What is holding you back?
+- Is your goal truly yours, or something you feel pressured to do?
+- What would the next smallest step be?
+- What does success mean to you today?
+
+Functions: goals, milestones, small steps, skill development, personal challenges, weekly reviews and reassessment. Goals could be learning, business, reading, patience, debt reduction, travel, fitness or confidence.
+
+SELF-RESPECT & BOUNDARIES
+- Do you say yes when you really want to say no?
+- Do you feel guilty when you take time for yourself?
+- Are you allowing people to treat you in ways you don't accept?
+- Do you frequently apologize when you haven't done anything wrong?
+- Are you holding yourself to standards you would never impose on others?
+- Do you keep promises you make to yourself?
+- Are you avoiding a conversation you need to have?
+- Do you recognize when you are wrong?
+- How do you respond to criticism?
+- Are you treating yourself with the same respect you expect from others?
+
+Functions: boundary-setting, personal values, self-talk, personal commitments, accountability, conflict reflection and assertiveness practice.
+
+FEATURE: KEEP A PROMISE TO ME
+Users make small promises, such as a walk, taking a break, calling a friend or finishing an avoided task. Track promises kept, not perfection. A missed commitment should prompt adjustment, not punishment.
+
+MY LIFE
+- How satisfied are you with your financial situation?
+- Do you know where your money goes?
+- Is your living environment helping or hurting your mental well-being?
+- Do you feel overwhelmed by your responsibilities?
+- Are you maintaining friendships?
+- Do you have a social life outside your immediate family?
+- Are you having enough fun?
+- How much of your day is spent doing things you don't want to do?
+- Is your life reasonably organized?
+- What is the biggest source of chaos in your life right now?
+
+Functions: personal finance habits, life organization, decluttering challenges, social connection reminders, calendar-based personal time, personal task lists, fun and leisure planning.
+
+3. WHAT ME SHOULD TRACK
+
+LEVEL 1 — DAILY SIGNALS: 60-SECOND CHECK-IN
+- Mood (1–5)
+- Energy (1–5)
+- Stress (1–5)
+- Sleep (hours and/or quality)
+- Did I do something for ME? (yes/no)
+- What do I need today? (quick selection)
+
+Possible needs: Rest, Movement, Connection, Quiet, Fun, Focus, Help, Space, Purpose.
+
+The app can adapt: Rest suggests wind-down; Connection suggests reaching out to a friend; Focus suggests a small task. This is responsive rather than merely recording data.
+
+LEVEL 2 — HABITS
+Suggested habits:
+- Body: walk, stretch, sleep on time, hydrate, exercise.
+- Mind: journal, meditate, breathe, take a quiet break.
+- Identity: read for pleasure, hobby time, creative activity.
+- Growth: study, practice a skill, work on a personal goal.
+- Boundaries: say no, take a break, keep a personal promise.
+- Life: organize, manage finances, connect with a friend, plan fun.
+
+Habits support daily/weekly/custom schedules, completion tracking, flexible targets, non-punitive streaks, history, notes, optional reminders and pause/delete.
+
+LEVEL 3 — WEEKLY & MONTHLY INSIGHTS
+
+Weekly review:
+- Energy and mood patterns
+- Stress patterns
+- Habit consistency
+- Personal goal progress
+- Personal activities
+- Promises kept
+- Biggest stressors and sources of happiness
+- A next small step
+
+Be careful about causal claims. Use “you noticed,” “this appears related,” or “a pattern may be emerging,” not diagnoses.
+
+Monthly review:
+- Mood, energy, sleep and stress trends
+- Habit consistency
+- Personal goal progress
+- Time spent on personal activities
+- Promises kept
+- Biggest stressors
+- Biggest sources of happiness
+- Changes in priorities
+
+Periodically ask: ARE YOU BECOMING THE PERSON YOU WANT TO BE?
+
+4. WHAT THE APP SHOULD DO
+
+A) ME DASHBOARD
+- How am I? — daily check-in
+- Today's ME — personalized daily activity
+- My habits — daily progress
+- My goals — personal progress
+- My journal — private reflection
+- My trends — mood, energy and behavioral patterns
+- My challenges — optional short challenges
+- My toolbox — exercises, activities and resources
+
+Keep the dashboard uncluttered and immediately actionable.
+
+B) TODAY'S ME — PERSONALIZED ACTIVITIES
+Examples:
+- Move: take a 15-minute walk, ideally without your phone.
+- Reflect: write what's weighing on you (5 minutes).
+- Reconnect with yourself: do something enjoyable for 20 minutes.
+- Reset: breathe and decompress for five minutes.
+
+Recommendation logic prioritizes:
+1. Current emotional and physical state
+2. Needs identified by the user
+3. Habits they are building
+4. Goals established
+5. Things they've been neglecting
+6. Variety and avoiding repetition
+7. Available time
+
+Users can say “I have 5 minutes” or “I have an hour” and get an appropriately sized activity. Avoid overwhelming people who are already struggling.
+
+C) ME TOOLBOX
+Library categories:
+- Emotional reset: breathing, grounding, calming and processing emotions.
+- Self-reflection: prompts, gratitude, thought exploration and patterns.
+- Movement: short workouts, stretching, walking and mobility.
+- Learning: skill-building, mini lessons and learning challenges.
+- Personal growth: goal planning and breaking tasks into steps.
+- Joy: fun, hobbies, experiences, social connection and play.
+- Rest: sleep routines, relaxation, recovery and downtime.
+- Confidence & boundaries: assertiveness, values, self-respect and communication practice.
+
+Each activity should include duration, difficulty, purpose, instructions, optional guided interaction and reflection.
+
+D) ME JOURNAL
+Modes:
+- Free writing
+- Daily reflection
+- Emotional processing
+- Gratitude
+- Problem-solving
+- Personal goals
+- Self-reflection
+- Brain dump
+
+An optional AI journal assistant can help explore themes, but it should not judge or pretend to be a therapist. Examples:
+- “You mentioned feeling frustrated three times this week. Would you like to explore what those situations had in common?”
+- “You seem to be putting a lot of pressure on yourself to get everything done. What would happen if one of those tasks waited until tomorrow?”
+
+The user controls whether AI can analyze their journal. Privacy is a core feature.
+
+5. HOW ME CONNECTS TO US AND US+
+
+ME IS PRIVATE BY DEFAULT.
+Spouses should not automatically see mood entries, journals, stress levels, personal goals, habit history or private reflections. Users may voluntarily share outcomes:
+- “I need a little more quiet time.”
+- “I'd like a more restful weekend.”
+- “I'm trying to improve how I react when stressed.”
+- “I'd like us to make room for individual time.”
+- “I'd like us to go for walks together.”
+- “I'd like to plan a night with friends.”
+
+The bridge:
+- ME: I discover what I need.
+- US: I communicate what I need and what I can contribute.
+- US+: We apply those skills to our family.
+
+Never turn private self-care into a spouse surveillance tool.
+
+6. ME BALANCE: INSIGHTS, NOT JUDGMENT
+
+Avoid a simplistic score that judges a person. Instead, use a ME Balance visualization across the six pillars, reflecting perceived satisfaction and personal priorities.
+
+Help users identify:
+- Where they're thriving
+- Where they're struggling
+- What they want to prioritize
+- How things have changed over time
+
+The user determines what matters most. This is not a clinical assessment or objective measurement of health.
+
+7. FIRST 30 DAYS
+
+Week 1 — Discover ME
+Objective: Understand baseline and needs.
+- Initial assessment
+- Daily check-ins
+- Emotion and stress identification
+- Sleep and energy awareness
+- Identify neglected areas
+
+Week 2 — Care for ME
+Objective: Build small daily care habits.
+- Select 2–3 habits
+- Create a simple routine
+- Try daily activities
+- Track personal time
+- Review energy and mood
+
+Week 3 — Respect ME
+Objective: Boundaries, self-talk, promises and personal time.
+- Identify boundaries
+- Practice saying no
+- Make a promise to yourself
+- Explore self-talk
+- Identify a recurring problem
+
+Week 4 — Grow ME
+Objective: Goals, purpose, hobbies and progress.
+- Set a personal goal
+- Choose a hobby
+- Set milestones
+- Review the month
+- Build a personal ME plan
+
+This is guided onboarding, not a gate or mandatory progression.
+
+8. MVP: BUILD THESE EIGHT COMPONENTS FIRST
+1. ME Assessment: baseline questionnaire with six pillars.
+2. Daily Check-In: mood, energy, stress, sleep and needs.
+3. Habits: flexible habits, history and reminders.
+4. Today's ME: personalized activities.
+5. Journal: private reflection, prompts and free writing.
+6. Personal Goals: goals, milestones and progress.
+7. ME Balance & Insights: trends, reflections and patterns.
+8. ME Toolbox: exercises, activities and guided challenges.
+
+9. THE PHILOSOPHY OF me4us
+
+me4us
+You can't have US, if there's no ME.
+
+You spend your life taking care of things.
+
+Your work. Your responsibilities. The people you love. The things that need fixing. The things that need doing.
+
+Somewhere along the way, you can forget to take care of the person doing all of it.
+
+That person is you.
+
+ME isn't about being selfish. It's about recognizing that your well-being matters, too.
+
+Because being a better partner, a better parent, and a better person doesn't begin with doing more for everyone else.
+
+IT BEGINS WITH TAKING CARE OF YOURSELF.
+
+PRODUCT DIRECTION
+Personal well-being, self-awareness and intentional growth are the foundation for healthier relationships and families. Not productivity for its own sake, not guilt, and not superficial gamification.
+
+NEXT STEP
+Design the ME module in detail — screens, navigation, complete questionnaire, question logic, habit system, daily check-in, activities, data model and answer-handling logic.
