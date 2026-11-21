@@ -17,7 +17,7 @@ Rules:
 - Union \= 2–3 members, linked by invite code between separate phones.  
 - Doors per person: kids / third person / alcohol / lite. Effective door \= ALL members opted in.  
 - Never show content a member hasn't opted into. Vanilla users must never be surprised.  
-- Points \= friendly rivalry; redeem for rewards (pick the date, 5-min massage). Redemption \= negative ledger entry.
+- Points are personal and private. No rivalry: never compared, ranked or shown to a partner. Me points come from the person's own `selfcare_log` and are never written to `points_ledger` (members can read it).
 
 ## v0 scope (build only this first)
 
@@ -65,9 +65,9 @@ checkins                         (user_id, date), answers[{qId, choiceId, note?}
 flist (per user)                 rating(curious|reserved|hard_limit), updated_at, source, cooldown_until, resurfaceCount, retired   # later
 
 unions                           member_count(<=3), kids_entitled
-members                          (union_id, user_id), role, joined_at, accepts_flags, hygiene_alerts, my_doors{kids,thirdPerson,alcohol,lite}, points
+members                          (union_id, user_id), role, joined_at, accepts_flags, hygiene_alerts, my_doors{kids,thirdPerson,alcohol,lite}, points   # points unused (no rivalry)
 nudges                           union_id, from_uid, to_uid, kind(flag|presence), text?, at, read_at
-points_ledger                    union_id, user_id, delta, reason, ref_type, ref_id, at
+points_ledger                    union_id, user_id, delta, reason, ref_type, ref_id, at   # unused for now (no rivalry)
 rewards                          union_id, title, cost, created_by, active
 events                           union_id, title, start_at, end_at, all_day, owner_uid|null, audience, kid_id?, google_event_id?, reminders[]
 kids                             union_id, name, birth_year                    # kids add-on
@@ -127,6 +127,7 @@ invite_attempts                  user_id, count, window_start                   
 
 ## Open decisions
 
+- Rewards (pick the date, 5-min massage; redemption = negative ledger entry): keep, and if so how, now that points are private? Not built.  
 - Kids add-on scope: per-union (one buys, both get it; needs `verifyKidsPurchase`) vs per-person. Default: per-union.  
 - Unrated Flist items: Lite included by default, Intense excluded.  
 - Google Calendar sync: after v0.
