@@ -8,6 +8,7 @@ workspace:
   - packages/core_union
   - packages/core_points
   - packages/feat_me
+  - packages/feat_couple
 dev_dependencies:
   melos: ^8.10.0
 melos:

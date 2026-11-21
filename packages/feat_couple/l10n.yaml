@@ -1,0 +1,5 @@
+arb-dir: lib/l10n
+template-arb-file: couple_en.arb
+output-localization-file: couple_localizations.dart
+output-class: CoupleLocalizations
+nullable-getter: false
