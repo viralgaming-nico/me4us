@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core_auth/core_auth.dart';
 import 'package:core_union/core_union.dart';
+import 'package:feat_me/feat_me.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:me4us/app.dart';
@@ -134,10 +135,33 @@ class FakeUnions extends UnionRepository {
   }
 }
 
+/// A Me repository with nothing in it.
+class EmptyMe implements MeRepository {
+  @override
+  Future<List<SelfcareItem>> items() async => [];
+  @override
+  Future<void> addItems(List<SelfcareItem> items) async {}
+  @override
+  Future<void> updateItem(SelfcareItem item) async {}
+  @override
+  Future<List<LogEntry>> logs() async => [];
+  @override
+  Future<void> setDone(SelfcareItem item, String day, bool done) async {}
+  @override
+  Future<List<CheckinAnswer>?> checkin(String day) async => null;
+  @override
+  Future<void> saveCheckin(String day, List<CheckinAnswer> answers) async {}
+}
+
+Future<void> openUs(WidgetTester t) async {
+  await t.tap(find.byKey(const Key('tab-us')));
+  await t.pumpAndSettle();
+}
+
 Future<void> pumpApp(WidgetTester t, FakeAuth auth, FakeUnions unions, {Locale? locale}) async {
   if (locale != null) t.platformDispatcher.localesTestValue = [locale];
   addTearDown(t.platformDispatcher.clearLocalesTestValue);
-  await t.pumpWidget(Me4UsApp(auth: auth, unions: unions));
+  await t.pumpWidget(Me4UsApp(auth: auth, unions: unions, meFor: (_) => EmptyMe()));
   await t.pumpAndSettle();
 }
 
@@ -179,6 +203,7 @@ void main() {
     final auth = FakeAuth();
     await pumpApp(t, auth, FakeUnions(world, 'a'));
     await signIn(t, 'a');
+    await openUs(t);
 
     expect(find.text('Link up'), findsOneWidget);
     await t.tap(find.text('Start a union'));
@@ -213,6 +238,7 @@ void main() {
 
     await pumpApp(t, FakeAuth(), FakeUnions(world, 'b'));
     await signIn(t, 'b');
+    await openUs(t);
 
     await t.enterText(find.widgetWithText(TextField, 'Invite code'), 'NOPE0000');
     await t.tap(find.widgetWithText(OutlinedButton, 'Join'));
@@ -240,6 +266,7 @@ void main() {
     await u.createUnion();
     await u.markOnboarded('union0', 'a');
     await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
     expect(find.text('Your union'), findsOneWidget);
   });
 
@@ -249,6 +276,7 @@ void main() {
     await u.createUnion();
     await u.markOnboarded('union0', 'a');
     await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
     await t.tap(find.text('Invite someone'));
     await t.pumpAndSettle();
     expect(find.text('WXYZ6789'), findsOneWidget);
@@ -263,6 +291,7 @@ void main() {
     await b.redeemInvite('ABCD2345');
     await b.markOnboarded('union0', 'b');
     await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'b')), b);
+    await openUs(t);
     expect(find.text('Your union'), findsOneWidget);
     expect(find.text('Invite a third person'), findsNothing);
     expect(find.text('Invite someone'), findsNothing);
@@ -274,6 +303,7 @@ void main() {
     await u.createUnion();
     await u.markOnboarded('union0', 'a');
     await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
     await t.tap(find.text('Sign out'));
     await t.pumpAndSettle();
     expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
@@ -284,6 +314,7 @@ void main() {
     await pumpApp(t, auth, FakeUnions(World(), 'g'));
     await t.tap(find.byKey(const Key('google-sign-in')));
     await t.pumpAndSettle();
+    await openUs(t);
     expect(auth.googleStarted, isTrue);
     expect(find.text('Link up'), findsOneWidget);
   });
@@ -292,5 +323,13 @@ void main() {
     await pumpApp(t, FakeAuth(), FakeUnions(World(), 'a'), locale: const Locale('es'));
     expect(find.widgetWithText(FilledButton, 'Iniciar sesión'), findsOneWidget);
     expect(find.text('Continuar con Google'), findsOneWidget);
+  });
+
+  testWidgets('signing in lands on Me, which works without a union and never nags', (t) async {
+    await pumpApp(t, FakeAuth(), FakeUnions(World(), 'solo'));
+    await signIn(t, 'solo');
+    expect(find.text('Your self-care list is empty'), findsOneWidget);
+    expect(find.text('Daily check-in'), findsOneWidget);
+    expect(find.textContaining(RegExp('partner|invite|union', caseSensitive: false)), findsNothing);
   });
 }

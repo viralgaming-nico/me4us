@@ -58,5 +58,7 @@
   "openForEveryone": "Abierto para todos",
   "doorOpen": "Abierta",
   "doorClosed": "Cerrada",
-  "changeDoors": "Cambiar mis puertas"
+  "changeDoors": "Cambiar mis puertas",
+  "tabMe": "Yo",
+  "tabUs": "Nosotros"
 }

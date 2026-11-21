@@ -199,4 +199,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get changeDoors => 'Change my doors';
+
+  @override
+  String get tabMe => 'Me';
+
+  @override
+  String get tabUs => 'Us';
 }

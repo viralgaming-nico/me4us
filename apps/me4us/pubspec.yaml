@@ -31,6 +31,8 @@ environment:
 dependencies:
   core_auth:
   core_union:
+  core_points:
+  feat_me:
   supabase_flutter: ^2.0.0
   flutter:
     sdk: flutter

@@ -1,5 +1,6 @@
 import 'package:core_auth/core_auth.dart';
 import 'package:core_union/core_union.dart';
+import 'package:feat_me/feat_me.dart';
 import 'package:flutter/material.dart';
 import 'l10n/app_localizations.dart';
 
@@ -9,11 +10,15 @@ import 'screens/home_screen.dart';
 import 'screens/pairing_screen.dart';
 import 'theme.dart';
 
+/// Builds the signed-in person's own Me repository.
+typedef MeRepositoryFor = MeRepository Function(String uid);
+
 class Me4UsApp extends StatelessWidget {
-  const Me4UsApp({super.key, required this.auth, required this.unions});
+  const Me4UsApp({super.key, required this.auth, required this.unions, required this.meFor});
 
   final AuthRepository auth;
   final UnionRepository unions;
+  final MeRepositoryFor meFor;
 
   @override
   Widget build(BuildContext context) {
@@ -21,19 +26,23 @@ class Me4UsApp extends StatelessWidget {
       title: 'me4us',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      localizationsDelegates: const [
+        ...AppLocalizations.localizationsDelegates,
+        MeLocalizations.delegate,
+      ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: SessionGate(auth: auth, unions: unions),
+      home: SessionGate(auth: auth, unions: unions, meFor: meFor),
     );
   }
 }
 
-/// Signed out -> sign in. Signed in -> [UnionGate].
+/// Signed out -> sign in. Signed in -> [MainShell].
 class SessionGate extends StatelessWidget {
-  const SessionGate({super.key, required this.auth, required this.unions});
+  const SessionGate({super.key, required this.auth, required this.unions, required this.meFor});
 
   final AuthRepository auth;
   final UnionRepository unions;
+  final MeRepositoryFor meFor;
 
   @override
   Widget build(BuildContext context) {
@@ -43,13 +52,73 @@ class SessionGate extends StatelessWidget {
       builder: (context, snap) {
         final user = snap.data;
         if (user == null) return AuthScreen(auth: auth);
-        return UnionGate(
+        return MainShell(
           key: ValueKey(user.uid),
           user: user,
           unions: unions,
+          me: meFor(user.uid),
           onSignOut: auth.signOut,
         );
       },
+    );
+  }
+}
+
+/// Me | Us. Me is free and works solo, so it is the first tab and never waits on a union.
+/// Us holds pairing, doors and the union home.
+class MainShell extends StatefulWidget {
+  const MainShell({
+    super.key,
+    required this.user,
+    required this.unions,
+    required this.me,
+    required this.onSignOut,
+  });
+
+  final AuthUser user;
+  final UnionRepository unions;
+  final MeRepository me;
+  final VoidCallback onSignOut;
+
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> {
+  int _tab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    return Scaffold(
+      body: IndexedStack(
+        index: _tab,
+        children: [
+          MeScreen(
+            repo: widget.me,
+            actions: [TextButton(onPressed: widget.onSignOut, child: Text(l.signOut))],
+          ),
+          UnionGate(user: widget.user, unions: widget.unions, onSignOut: widget.onSignOut),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        destinations: [
+          NavigationDestination(
+            key: const Key('tab-me'),
+            icon: const Icon(Icons.favorite_border),
+            selectedIcon: const Icon(Icons.favorite),
+            label: l.tabMe,
+          ),
+          NavigationDestination(
+            key: const Key('tab-us'),
+            icon: const Icon(Icons.people_outline),
+            selectedIcon: const Icon(Icons.people),
+            label: l.tabUs,
+          ),
+        ],
+      ),
     );
   }
 }

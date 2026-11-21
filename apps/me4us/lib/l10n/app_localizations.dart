@@ -451,6 +451,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Change my doors'**
   String get changeDoors;
+
+  /// No description provided for @tabMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get tabMe;
+
+  /// No description provided for @tabUs.
+  ///
+  /// In en, this message translates to:
+  /// **'Us'**
+  String get tabUs;
 }
 
 class _AppLocalizationsDelegate

@@ -59,5 +59,7 @@
   "openForEveryone": "Open for everyone",
   "doorOpen": "Open",
   "doorClosed": "Closed",
-  "changeDoors": "Change my doors"
+  "changeDoors": "Change my doors",
+  "tabMe": "Me",
+  "tabUs": "Us"
 }
