@@ -19,7 +19,7 @@ let server;
 let admin; // superuser connection (bypasses RLS)
 
 before(async () => {
-  rmSync(DATA, { recursive: true, force: true });
+  rmSync(DATA, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
   server = new EmbeddedPostgres({
     databaseDir: DATA, user: 'postgres', password: 'pw', port: PORT, persistent: false,
   });
@@ -37,7 +37,11 @@ before(async () => {
 after(async () => {
   await admin?.end();
   await server?.stop();
-  rmSync(DATA, { recursive: true, force: true });
+  // Best effort: on Windows Postgres can hold the folder briefly after stopping.
+  // The next run wipes it in before(), so a leftover never affects results.
+  try {
+    rmSync(DATA, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
+  } catch {}
 });
 
 beforeEach(async () => {
@@ -175,6 +179,7 @@ describe('points_ledger', () => {
 
 describe('events and rewards', () => {
   it('members read/write events, outsiders cannot', async () => {
+    await admin.query('update public.unions set us_entitled = true where id = $1', [UN]);
     await ok(V, `insert into public.events (union_id, title, start_at) values ($1, 'Dinner', now())`, [UN]);
     assert.equal((await ok(U, 'select * from public.events')).rowCount, 1);
     await noRows(X, 'select * from public.events');
@@ -326,5 +331,85 @@ describe('onboarding flag and new_invite', () => {
   });
   it('requires sign-in', async () => {
     await denied(null, 'select * from public.new_invite()');
+  });
+});
+
+describe('calendar (Me + You)', () => {
+  const ins = (uid, owner, title = 'e') =>
+    run(uid, `insert into public.events (union_id, title, start_at, owner_uid, reminders) values ($1, $2, now(), $3, '[60]') returning id`, [UN, title, owner]);
+  beforeEach(() => admin.query('update public.unions set us_entitled = true where id = $1', [UN]));
+
+  it('locked until the union is entitled', async () => {
+    await admin.query('update public.unions set us_entitled = false where id = $1', [UN]);
+    await admin.query(`insert into public.events (union_id, title, start_at) values ($1, 'x', now())`, [UN]);
+    await denied(U, `insert into public.events (union_id, title, start_at) values ($1, 'x', now())`, [UN]);
+    await noRows(U, 'select * from public.events');
+  });
+  it('shared events: any member edits and deletes', async () => {
+    const { id } = (await ins(U, null)).rows[0];
+    await ok(V, `update public.events set title = 'moved' where id = $1`, [id]);
+    assert.equal((await ok(U, 'select title from public.events')).rows[0].title, 'moved');
+    await ok(V, 'delete from public.events where id = $1', [id]);
+    await noRows(U, 'select * from public.events');
+  });
+  it('own events: partner sees them but cannot change them', async () => {
+    const { id } = (await ins(U, U, 'dentist')).rows[0];
+    assert.equal((await ok(V, 'select title from public.events')).rows[0].title, 'dentist');
+    await noRows(V, `update public.events set title = 'x' where id = $1`, [id]);
+    await noRows(V, 'delete from public.events where id = $1', [id]);
+    await ok(U, `update public.events set title = 'dentist 3pm' where id = $1`, [id]);
+  });
+  it('cannot create or reassign an event as someone else', async () => {
+    await denied(U, `insert into public.events (union_id, title, start_at, owner_uid) values ($1, 'x', now(), $2)`, [UN, V]);
+    const { id } = (await ins(U, null)).rows[0];
+    await denied(U, `update public.events set owner_uid = $2 where id = $1`, [id, V]);
+  });
+  it('rejects end before start, non-array reminders, and Google/kids columns', async () => {
+    await denied(U, `insert into public.events (union_id, title, start_at, end_at) values ($1, 'x', now(), now() - interval '1 hour')`, [UN]);
+    await denied(U, `insert into public.events (union_id, title, start_at, reminders) values ($1, 'x', now(), '{}')`, [UN]);
+    await denied(U, `insert into public.events (union_id, title, start_at, google_event_id) values ($1, 'x', now(), 'g')`, [UN]);
+  });
+});
+
+describe('send_nudge', () => {
+  const send = async (uid, to, kind = 'flag', text = null) =>
+    (await ok(uid, 'select * from public.send_nudge($1, $2, $3)', [to, kind, text])).rows[0].status;
+  beforeEach(async () => {
+    await admin.query('update public.unions set us_entitled = true where id = $1', [UN]);
+    await admin.query('update public.members set accepts_flags = true where user_id = $1', [V]);
+  });
+
+  it('delivers to an opted-in partner; only sender and recipient see it', async () => {
+    assert.equal(await send(U, V, 'flag', '  hug?  '), 'ok');
+    const n = (await ok(V, 'select * from public.nudges')).rows[0];
+    assert.equal(n.text, 'hug?');
+    assert.equal(n.from_uid, U);
+    assert.equal(n.union_id, UN);
+    await ok(V, `update public.nudges set read_at = now()`);
+  });
+  it('presence nudges never carry a reason', async () => {
+    assert.equal(await send(U, V, 'presence', 'because you skipped meds'), 'ok');
+    assert.equal((await admin.query('select text from public.nudges')).rows[0].text, null);
+  });
+  it('recipient must opt in', async () => {
+    assert.equal(await send(V, U), 'not_accepting');
+    assert.equal((await admin.query('select count(*)::int c from public.nudges')).rows[0].c, 0);
+  });
+  it('3 per sender per 24 hours, then recovers', async () => {
+    for (let i = 0; i < 3; i++) assert.equal(await send(U, V), 'ok');
+    assert.equal(await send(U, V, 'presence'), 'rate_limited');
+    await admin.query(`update public.nudges set at = now() - interval '25 hours'`);
+    assert.equal(await send(U, V), 'ok');
+  });
+  it('not entitled, outsiders, self and bad input are refused', async () => {
+    assert.equal(await send(X, V), 'not_member');
+    assert.equal(await send(U, U), 'invalid');
+    assert.equal(await send(U, V, 'kiss'), 'invalid');
+    assert.equal(await send(U, V, 'flag', 'x'.repeat(141)), 'invalid');
+    await admin.query('update public.unions set us_entitled = false where id = $1', [UN]);
+    assert.equal(await send(U, V), 'not_entitled');
+  });
+  it('requires sign-in', async () => {
+    await denied(null, `select * from public.send_nudge($1, 'flag')`, [V]);
   });
 });
