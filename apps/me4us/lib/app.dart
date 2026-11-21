@@ -1,6 +1,7 @@
 import 'package:core_auth/core_auth.dart';
 import 'package:core_union/core_union.dart';
 import 'package:flutter/material.dart';
+import 'l10n/app_localizations.dart';
 
 import 'screens/auth_screen.dart';
 import 'screens/doors_screen.dart';
@@ -20,6 +21,8 @@ class Me4UsApp extends StatelessWidget {
       title: 'me4us',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: SessionGate(auth: auth, unions: unions),
     );
   }
@@ -98,19 +101,20 @@ class _UnionGateState extends State<UnionGate> {
   Widget build(BuildContext context) {
     if (_loading) return const _Loading();
     if (_failed) {
+      final l = AppLocalizations.of(context);
       return Scaffold(
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Couldn't load your account."),
+              Text(l.loadAccountFailed),
               const SizedBox(height: 12),
               FilledButton(
                 onPressed: _load,
                 style: FilledButton.styleFrom(minimumSize: const Size(160, 48)),
-                child: const Text('Try again'),
+                child: Text(l.tryAgain),
               ),
-              TextButton(onPressed: widget.onSignOut, child: const Text('Sign out')),
+              TextButton(onPressed: widget.onSignOut, child: Text(l.signOut)),
             ],
           ),
         ),
@@ -155,13 +159,14 @@ class MemberGate extends StatelessWidget {
       builder: (context, snap) {
         final members = snap.data;
         if (snap.hasError) {
+          final l = AppLocalizations.of(context);
           return Scaffold(
             body: Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text("Couldn't load your union."),
-                  TextButton(onPressed: onSignOut, child: const Text('Sign out')),
+                  Text(l.loadUnionFailed),
+                  TextButton(onPressed: onSignOut, child: Text(l.signOut)),
                 ],
               ),
             ),

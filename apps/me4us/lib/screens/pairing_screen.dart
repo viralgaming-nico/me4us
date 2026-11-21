@@ -1,5 +1,6 @@
 import 'package:core_union/core_union.dart';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 
 import '../theme.dart';
@@ -33,14 +34,15 @@ class _PairingScreenState extends State<PairingScreen> {
     super.dispose();
   }
 
-  String _messageFor(UnionFailure f) => switch (f) {
-        UnionFailure.alreadyInUnion => 'You are already in a union.',
-        UnionFailure.tooManyAttempts => 'Too many attempts. Please try again in an hour.',
-        UnionFailure.invalid => "That code isn't valid. Check it and try again.",
-        UnionFailure.notOwner || UnionFailure.full => 'That did not work. Please try again.',
+  String _messageFor(AppLocalizations l, UnionFailure f) => switch (f) {
+        UnionFailure.alreadyInUnion => l.errAlreadyInUnion,
+        UnionFailure.tooManyAttempts => l.errTooManyAttempts,
+        UnionFailure.invalid => l.errInvalidCode,
+        UnionFailure.notOwner || UnionFailure.full => l.errGeneric,
       };
 
   Future<void> _run(Future<void> Function() job) async {
+    final l = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _error = null;
@@ -48,9 +50,9 @@ class _PairingScreenState extends State<PairingScreen> {
     try {
       await job();
     } on UnionException catch (e) {
-      if (mounted) setState(() => _error = _messageFor(e.failure));
+      if (mounted) setState(() => _error = _messageFor(l, e.failure));
     } catch (_) {
-      if (mounted) setState(() => _error = 'Something went wrong. Check your connection and try again.');
+      if (mounted) setState(() => _error = l.errConnection);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -72,7 +74,7 @@ class _PairingScreenState extends State<PairingScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Wordmark(size: 24),
-        actions: [TextButton(onPressed: widget.onSignOut, child: const Text('Sign out'))],
+        actions: [TextButton(onPressed: widget.onSignOut, child: Text(AppLocalizations.of(context).signOut))],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -84,12 +86,13 @@ class _PairingScreenState extends State<PairingScreen> {
   }
 
   Widget _codeView(({String unionId, String inviteCode}) created) {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Your union is ready', style: Theme.of(context).textTheme.headlineSmall),
+        Text(l.unionReady, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
-        const Text('Share this code with the other person. It works for 7 days.'),
+        Text(l.shareCode),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(vertical: 24),
@@ -107,43 +110,44 @@ class _PairingScreenState extends State<PairingScreen> {
         const SizedBox(height: 12),
         OutlinedButton(
           onPressed: () => Clipboard.setData(ClipboardData(text: created.inviteCode)),
-          child: const Text('Copy code'),
+          child: Text(l.copyCode),
         ),
         const SizedBox(height: 12),
         FilledButton(
           onPressed: () => widget.onJoined(created.unionId),
-          child: const Text('Continue'),
+          child: Text(l.continueButton),
         ),
       ],
     );
   }
 
   Widget _chooseView() {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Link up', style: Theme.of(context).textTheme.headlineSmall),
+        Text(l.linkUp, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 8),
-        const Text('A union is 2 or 3 people on their own phones.'),
+        Text(l.unionExplainer),
         const SizedBox(height: 20),
         FilledButton(
           onPressed: _busy ? null : _create,
-          child: const Text('Start a union'),
+          child: Text(l.startUnion),
         ),
         const SizedBox(height: 28),
-        const Text('Have a code?'),
+        Text(l.haveCode),
         const SizedBox(height: 8),
         TextField(
           controller: _code,
           textCapitalization: TextCapitalization.characters,
           autocorrect: false,
-          decoration: const InputDecoration(labelText: 'Invite code'),
+          decoration: InputDecoration(labelText: l.inviteCode),
           onSubmitted: (_) => _busy ? null : _join(),
         ),
         const SizedBox(height: 12),
         OutlinedButton(
           onPressed: _busy ? null : _join,
-          child: const Text('Join'),
+          child: Text(l.join),
         ),
         if (_error != null) ...[
           const SizedBox(height: 12),

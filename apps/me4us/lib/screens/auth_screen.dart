@@ -1,5 +1,6 @@
 import 'package:core_auth/core_auth.dart';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 import '../theme.dart';
 
@@ -27,11 +28,28 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  Future<void> _google() async {
+    final l = AppLocalizations.of(context);
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      await widget.auth.signInWithGoogle();
+      // The session arrives through the auth stream when the browser returns to the app.
+    } catch (_) {
+      if (mounted) setState(() => _message = l.authGoogleFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _submit() async {
+    final l = AppLocalizations.of(context);
     final email = _email.text.trim();
     final password = _password.text;
     if (email.isEmpty || password.length < 6) {
-      setState(() => _message = 'Enter your email and a password of at least 6 characters.');
+      setState(() => _message = l.authNeedEmailPassword);
       return;
     }
     setState(() {
@@ -54,14 +72,14 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         setState(() {
           _creating = false;
-          _message = 'Check your email to confirm your account, then sign in.';
+          _message = l.authCheckEmail;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() => _message = _creating
-            ? "Couldn't create the account. Try a different email."
-            : "Couldn't sign in. Check your email and password.");
+            ? l.authCreateFailed
+            : l.authSignInFailed);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -70,6 +88,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -82,13 +101,13 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   const Center(child: Wordmark(size: 44)),
                   const SizedBox(height: 4),
-                  const Center(child: Text('a little more me, a little more us')),
+                  Center(child: Text(l.tagline)),
                   const SizedBox(height: 32),
                   if (_creating) ...[
                     TextField(
                       controller: _name,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'Your name'),
+                      decoration: InputDecoration(labelText: l.yourName),
                     ),
                     const SizedBox(height: 12),
                   ],
@@ -97,7 +116,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(labelText: l.email),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -105,7 +124,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     obscureText: true,
                     autofillHints: const [AutofillHints.password],
                     onSubmitted: (_) => _busy ? null : _submit(),
-                    decoration: const InputDecoration(labelText: 'Password'),
+                    decoration: InputDecoration(labelText: l.password),
                   ),
                   if (_message != null) ...[
                     const SizedBox(height: 12),
@@ -114,7 +133,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(height: 20),
                   FilledButton(
                     onPressed: _busy ? null : _submit,
-                    child: Text(_creating ? 'Create account' : 'Sign in'),
+                    child: Text(_creating ? l.createAccount : l.signIn),
                   ),
                   TextButton(
                     onPressed: _busy
@@ -123,7 +142,16 @@ class _AuthScreenState extends State<AuthScreen> {
                               _creating = !_creating;
                               _message = null;
                             }),
-                    child: Text(_creating ? 'I already have an account' : 'Create an account'),
+                    child: Text(_creating ? l.haveAccount : l.createAnAccount),
+                  ),
+                  const SizedBox(height: 8),
+                  Center(child: Text(l.or)),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    key: const Key('google-sign-in'),
+                    onPressed: _busy ? null : _google,
+                    icon: const Icon(Icons.account_circle_outlined),
+                    label: Text(l.continueWithGoogle),
                   ),
                 ],
               ),

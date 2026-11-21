@@ -1,5 +1,6 @@
 import 'package:core_union/core_union.dart';
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 
 /// Where each person chooses which doors they are open to. Everything starts closed.
 /// Only what EVERY member opens is ever shown (see Doors.effective).
@@ -31,14 +32,8 @@ class _DoorsScreenState extends State<DoorsScreen> {
   bool _busy = false;
   String? _error;
 
-  static const _labels = <Door, (String, String)>{
-    Door.kids: ('Kids', 'Calendars and tasks for children in your union.'),
-    Door.thirdPerson: ('A third person', 'Include a third member in shared things.'),
-    Door.alcohol: ('Alcohol', 'Content that mentions drinking.'),
-    Door.lite: ('Lite fun', 'Mild, PG-13 playful content.'),
-  };
-
   Future<void> _save() async {
+    final l = AppLocalizations.of(context);
     setState(() {
       _busy = true;
       _error = null;
@@ -51,7 +46,7 @@ class _DoorsScreenState extends State<DoorsScreen> {
         Navigator.of(context).pop();
       }
     } catch (_) {
-      if (mounted) setState(() => _error = "Couldn't save. Check your connection and try again.");
+      if (mounted) setState(() => _error = l.saveFailed);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -59,24 +54,22 @@ class _DoorsScreenState extends State<DoorsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final labels = doorLabels(l);
     return Scaffold(
-      appBar: AppBar(title: const Text('Your doors')),
+      appBar: AppBar(title: Text(l.yourDoors)),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const Text(
-              'Choose what you are open to. Nothing is shown unless everyone in your '
-              'union opens that door, and nobody sees your individual choices. '
-              'You can change this any time.',
-            ),
+            Text(l.doorsExplainer),
             const SizedBox(height: 12),
             for (final d in Door.values)
               SwitchListTile(
                 key: Key('door-${d.name}'),
                 contentPadding: EdgeInsets.zero,
-                title: Text(_labels[d]!.$1),
-                subtitle: Text(_labels[d]!.$2),
+                title: Text(labels[d]!.$1),
+                subtitle: Text(labels[d]!.$2),
                 value: _doors.isOpen(d),
                 onChanged: _busy ? null : (v) => setState(() => _doors = _doors.set(d, v)),
               ),
@@ -87,7 +80,7 @@ class _DoorsScreenState extends State<DoorsScreen> {
             const SizedBox(height: 16),
             FilledButton(
               onPressed: _busy ? null : _save,
-              child: Text(widget.firstTime ? 'Continue' : 'Save'),
+              child: Text(widget.firstTime ? l.continueButton : l.save),
             ),
           ],
         ),
@@ -95,3 +88,11 @@ class _DoorsScreenState extends State<DoorsScreen> {
     );
   }
 }
+
+/// Localized (name, description) for each door.
+Map<Door, (String, String)> doorLabels(AppLocalizations l) => {
+      Door.kids: (l.doorKids, l.doorKidsDesc),
+      Door.thirdPerson: (l.doorThirdPerson, l.doorThirdPersonDesc),
+      Door.alcohol: (l.doorAlcohol, l.doorAlcoholDesc),
+      Door.lite: (l.doorLite, l.doorLiteDesc),
+    };

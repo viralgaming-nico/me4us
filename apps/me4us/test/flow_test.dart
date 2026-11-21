@@ -40,6 +40,14 @@ class FakeAuth implements AuthRepository {
     return signIn(email: email, password: password);
   }
 
+  bool googleStarted = false;
+
+  @override
+  Future<void> signInWithGoogle() async {
+    googleStarted = true;
+    _set(const AuthUser(uid: 'g', email: 'g@gmail.test'));
+  }
+
   @override
   Future<void> signOut() async => _set(null);
 }
@@ -126,7 +134,9 @@ class FakeUnions extends UnionRepository {
   }
 }
 
-Future<void> pumpApp(WidgetTester t, FakeAuth auth, FakeUnions unions) async {
+Future<void> pumpApp(WidgetTester t, FakeAuth auth, FakeUnions unions, {Locale? locale}) async {
+  if (locale != null) t.platformDispatcher.localesTestValue = [locale];
+  addTearDown(t.platformDispatcher.clearLocalesTestValue);
   await t.pumpWidget(Me4UsApp(auth: auth, unions: unions));
   await t.pumpAndSettle();
 }
@@ -267,5 +277,20 @@ void main() {
     await t.tap(find.text('Sign out'));
     await t.pumpAndSettle();
     expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+  });
+
+  testWidgets('Google sign-in leads to pairing', (t) async {
+    final auth = FakeAuth();
+    await pumpApp(t, auth, FakeUnions(World(), 'g'));
+    await t.tap(find.byKey(const Key('google-sign-in')));
+    await t.pumpAndSettle();
+    expect(auth.googleStarted, isTrue);
+    expect(find.text('Link up'), findsOneWidget);
+  });
+
+  testWidgets('Spanish device shows Spanish text', (t) async {
+    await pumpApp(t, FakeAuth(), FakeUnions(World(), 'a'), locale: const Locale('es'));
+    expect(find.widgetWithText(FilledButton, 'Iniciar sesión'), findsOneWidget);
+    expect(find.text('Continuar con Google'), findsOneWidget);
   });
 }
