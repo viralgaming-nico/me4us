@@ -97,6 +97,11 @@ describe('Me data is owner-only', () => {
     await noRows(V, 'delete from public.selfcare_log');
     await denied(V, `insert into public.checkins (user_id, date) values ($1, '2026-11-02')`, [U]);
   });
+  it('self-care log stores a non-negative points snapshot', async () => {
+    await ok(U, `insert into public.selfcare_log (user_id, date, item_id, points) values ($1, '2026-11-01', '20000000-0000-0000-0000-000000000001', 2)`, [U]);
+    assert.equal((await ok(U, 'select points from public.selfcare_log')).rows[0].points, 2);
+    await denied(U, `insert into public.selfcare_log (user_id, date, item_id, points) values ($1, '2026-11-02', '20000000-0000-0000-0000-000000000001', -1)`, [U]);
+  });
   it('anon has no access', async () => {
     await denied(null, 'select * from public.selfcare_items');
     await denied(null, 'select * from public.profiles');
