@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:core_auth/core_auth.dart';
 import 'package:core_union/core_union.dart';
+import 'package:feat_couple/feat_couple.dart';
 import 'package:feat_me/feat_me.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -135,6 +136,24 @@ class FakeUnions extends UnionRepository {
   }
 }
 
+/// Me + You not unlocked: every couple screen shows the paywall.
+class LockedCouple implements CoupleRepository {
+  @override
+  Stream<bool> watchEntitled(String unionId) => Stream.value(false);
+  @override
+  Stream<List<CalendarEvent>> watchEvents(String unionId) => Stream.value(const []);
+  @override
+  Future<void> saveEvent(String unionId, CalendarEvent event) async {}
+  @override
+  Future<void> deleteEvent(String eventId) async {}
+  @override
+  Stream<List<Nudge>> watchNudges(String uid) => Stream.value(const []);
+  @override
+  Future<NudgeResult> sendNudge(String toUid, NudgeKind kind, {String? text}) async => NudgeResult.notEntitled;
+  @override
+  Future<void> markRead(String nudgeId) async {}
+}
+
 /// A Me repository with nothing in it.
 class EmptyMe implements MeRepository {
   @override
@@ -161,7 +180,7 @@ Future<void> openUs(WidgetTester t) async {
 Future<void> pumpApp(WidgetTester t, FakeAuth auth, FakeUnions unions, {Locale? locale}) async {
   if (locale != null) t.platformDispatcher.localesTestValue = [locale];
   addTearDown(t.platformDispatcher.clearLocalesTestValue);
-  await t.pumpWidget(Me4UsApp(auth: auth, unions: unions, meFor: (_) => EmptyMe()));
+  await t.pumpWidget(Me4UsApp(auth: auth, unions: unions, meFor: (_) => EmptyMe(), couple: LockedCouple()));
   await t.pumpAndSettle();
 }
 
@@ -256,6 +275,8 @@ void main() {
     expect(find.text('Your union'), findsOneWidget);
     expect(find.text('You'), findsOneWidget);
     expect(find.text('Member 1'), findsOneWidget);
+    await t.drag(find.byType(ListView).first, const Offset(0, -600));
+    await t.pumpAndSettle();
     expect(find.text('Closed'), findsNWidgets(4));
     expect(find.text('Open'), findsNothing);
   });
@@ -331,5 +352,22 @@ void main() {
     expect(find.text('Your self-care list is empty'), findsOneWidget);
     expect(find.text('Daily check-in'), findsOneWidget);
     expect(find.textContaining(RegExp('partner|invite|union', caseSensitive: false)), findsNothing);
+  });
+
+  testWidgets('Us home opens calendar and nudges; locked union sees the paywall', (t) async {
+    final world = World();
+    final u = FakeUnions(world, 'a');
+    await u.createUnion();
+    await u.markOnboarded('union0', 'a');
+    await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
+    await t.tap(find.byKey(const Key('open-calendar')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('paywall')), findsOneWidget);
+    await t.pageBack();
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('open-nudges')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('paywall')), findsOneWidget);
   });
 }

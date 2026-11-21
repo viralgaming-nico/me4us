@@ -33,6 +33,7 @@ dependencies:
   core_union:
   core_points:
   feat_me:
+  feat_couple:
   supabase_flutter: ^2.0.0
   flutter:
     sdk: flutter

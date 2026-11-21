@@ -208,4 +208,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tabUs => 'Nosotros';
+
+  @override
+  String get calendar => 'Calendario';
+
+  @override
+  String get nudges => 'Toques';
 }

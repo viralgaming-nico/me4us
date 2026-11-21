@@ -61,5 +61,7 @@
   "doorClosed": "Closed",
   "changeDoors": "Change my doors",
   "tabMe": "Me",
-  "tabUs": "Us"
+  "tabUs": "Us",
+  "calendar": "Calendar",
+  "nudges": "Nudges"
 }

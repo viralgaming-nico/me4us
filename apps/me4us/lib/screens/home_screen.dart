@@ -1,4 +1,5 @@
 import 'package:core_union/core_union.dart';
+import 'package:feat_couple/feat_couple.dart';
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +17,7 @@ class HomeScreen extends StatefulWidget {
     required this.me,
     required this.members,
     required this.onSignOut,
+    required this.couple,
   });
 
   final UnionRepository unions;
@@ -23,6 +25,7 @@ class HomeScreen extends StatefulWidget {
   final Member me;
   final List<Member> members;
   final VoidCallback onSignOut;
+  final CoupleRepository couple;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -32,6 +35,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _code;
   String? _error;
   bool _busy = false;
+
+  void _push(Widget screen) => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 
   Future<void> _invite() async {
     final l = AppLocalizations.of(context);
@@ -72,6 +77,41 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
+            Row(children: [
+              Expanded(
+                child: FilledButton.icon(
+                  key: const Key('open-calendar'),
+                  onPressed: () => _push(CalendarScreen(
+                    repo: widget.couple,
+                    unionId: widget.unionId,
+                    uid: widget.me.uid,
+                  )),
+                  icon: const Icon(Icons.calendar_month_outlined),
+                  label: Text(l.calendar),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FilledButton.icon(
+                  key: const Key('open-nudges'),
+                  onPressed: () => _push(NudgesScreen(
+                    repo: widget.couple,
+                    unionId: widget.unionId,
+                    uid: widget.me.uid,
+                    others: {
+                      for (var i = 0; i < members.length; i++)
+                        if (members[i].uid != widget.me.uid) members[i].uid: l.memberN(i + 1),
+                    },
+                    accepting: widget.me.acceptsFlags,
+                    onAcceptChanged: (v) =>
+                        widget.unions.setPreferences(widget.unionId, widget.me.uid, acceptsFlags: v),
+                  )),
+                  icon: const Icon(Icons.favorite_outline),
+                  label: Text(l.nudges),
+                ),
+              ),
+            ]),
+            const SizedBox(height: 28),
             Text(l.yourUnion, style: Theme.of(context).textTheme.headlineSmall),
             const SizedBox(height: 12),
             for (var i = 0; i < members.length; i++)

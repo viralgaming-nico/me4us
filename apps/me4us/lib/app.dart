@@ -1,5 +1,6 @@
 import 'package:core_auth/core_auth.dart';
 import 'package:core_union/core_union.dart';
+import 'package:feat_couple/feat_couple.dart';
 import 'package:feat_me/feat_me.dart';
 import 'package:flutter/material.dart';
 import 'l10n/app_localizations.dart';
@@ -14,11 +15,18 @@ import 'theme.dart';
 typedef MeRepositoryFor = MeRepository Function(String uid);
 
 class Me4UsApp extends StatelessWidget {
-  const Me4UsApp({super.key, required this.auth, required this.unions, required this.meFor});
+  const Me4UsApp({
+    super.key,
+    required this.auth,
+    required this.unions,
+    required this.meFor,
+    required this.couple,
+  });
 
   final AuthRepository auth;
   final UnionRepository unions;
   final MeRepositoryFor meFor;
+  final CoupleRepository couple;
 
   @override
   Widget build(BuildContext context) {
@@ -29,20 +37,28 @@ class Me4UsApp extends StatelessWidget {
       localizationsDelegates: const [
         ...AppLocalizations.localizationsDelegates,
         MeLocalizations.delegate,
+        CoupleLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: SessionGate(auth: auth, unions: unions, meFor: meFor),
+      home: SessionGate(auth: auth, unions: unions, meFor: meFor, couple: couple),
     );
   }
 }
 
 /// Signed out -> sign in. Signed in -> [MainShell].
 class SessionGate extends StatelessWidget {
-  const SessionGate({super.key, required this.auth, required this.unions, required this.meFor});
+  const SessionGate({
+    super.key,
+    required this.auth,
+    required this.unions,
+    required this.meFor,
+    required this.couple,
+  });
 
   final AuthRepository auth;
   final UnionRepository unions;
   final MeRepositoryFor meFor;
+  final CoupleRepository couple;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +73,7 @@ class SessionGate extends StatelessWidget {
           user: user,
           unions: unions,
           me: meFor(user.uid),
+          couple: couple,
           onSignOut: auth.signOut,
         );
       },
@@ -73,12 +90,14 @@ class MainShell extends StatefulWidget {
     required this.unions,
     required this.me,
     required this.onSignOut,
+    required this.couple,
   });
 
   final AuthUser user;
   final UnionRepository unions;
   final MeRepository me;
   final VoidCallback onSignOut;
+  final CoupleRepository couple;
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -98,7 +117,12 @@ class _MainShellState extends State<MainShell> {
             repo: widget.me,
             actions: [TextButton(onPressed: widget.onSignOut, child: Text(l.signOut))],
           ),
-          UnionGate(user: widget.user, unions: widget.unions, onSignOut: widget.onSignOut),
+          UnionGate(
+            user: widget.user,
+            unions: widget.unions,
+            onSignOut: widget.onSignOut,
+            couple: widget.couple,
+          ),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -130,11 +154,13 @@ class UnionGate extends StatefulWidget {
     required this.user,
     required this.unions,
     required this.onSignOut,
+    required this.couple,
   });
 
   final AuthUser user;
   final UnionRepository unions;
   final VoidCallback onSignOut;
+  final CoupleRepository couple;
 
   @override
   State<UnionGate> createState() => _UnionGateState();
@@ -198,6 +224,7 @@ class _UnionGateState extends State<UnionGate> {
       );
     }
     return MemberGate(
+      couple: widget.couple,
       unionId: id,
       uid: widget.user.uid,
       unions: widget.unions,
@@ -214,12 +241,14 @@ class MemberGate extends StatelessWidget {
     required this.uid,
     required this.unions,
     required this.onSignOut,
+    required this.couple,
   });
 
   final String unionId;
   final String uid;
   final UnionRepository unions;
   final VoidCallback onSignOut;
+  final CoupleRepository couple;
 
   @override
   Widget build(BuildContext context) {
@@ -254,6 +283,7 @@ class MemberGate extends StatelessWidget {
           );
         }
         return HomeScreen(
+          couple: couple,
           unions: unions,
           unionId: unionId,
           me: me,

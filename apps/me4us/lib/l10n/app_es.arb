@@ -60,5 +60,7 @@
   "doorClosed": "Cerrada",
   "changeDoors": "Cambiar mis puertas",
   "tabMe": "Yo",
-  "tabUs": "Nosotros"
+  "tabUs": "Nosotros",
+  "calendar": "Calendario",
+  "nudges": "Toques"
 }

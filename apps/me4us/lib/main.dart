@@ -1,5 +1,6 @@
 import 'package:core_auth/core_auth.dart';
 import 'package:core_union/core_union.dart';
+import 'package:feat_couple/feat_couple.dart';
 import 'package:feat_me/feat_me.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -15,5 +16,6 @@ Future<void> main() async {
     auth: SupabaseAuthRepository(client),
     unions: SupabaseUnionRepository(client),
     meFor: (uid) => SupabaseMeRepository(client, uid),
+    couple: SupabaseCoupleRepository(client),
   ));
 }

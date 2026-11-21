@@ -463,6 +463,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Us'**
   String get tabUs;
+
+  /// No description provided for @calendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get calendar;
+
+  /// No description provided for @nudges.
+  ///
+  /// In en, this message translates to:
+  /// **'Nudges'**
+  String get nudges;
 }
 
 class _AppLocalizationsDelegate
