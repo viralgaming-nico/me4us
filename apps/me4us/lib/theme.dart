@@ -30,6 +30,7 @@ ThemeData buildTheme() {
   );
   return ThemeData(
     useMaterial3: true,
+    fontFamily: 'Nunito', // 600 for body (nearest bundled weight), 800 for headings
     colorScheme: scheme,
     scaffoldBackgroundColor: Me4UsColors.cream,
     appBarTheme: const AppBarTheme(
