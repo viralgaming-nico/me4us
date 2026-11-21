@@ -413,3 +413,9 @@ describe('send_nudge', () => {
     await denied(null, `select * from public.send_nudge($1, 'flag')`, [V]);
   });
 });
+
+describe('ping (keep-awake)', () => {
+  it('anyone can call it; it returns true and nothing else', async () => {
+    assert.equal((await run(null, 'select public.ping() as p')).rows[0].p, true);
+  });
+});
