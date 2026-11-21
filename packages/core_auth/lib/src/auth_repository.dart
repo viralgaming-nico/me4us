@@ -29,6 +29,10 @@ abstract class AuthRepository {
     String? displayName,
   });
 
+  /// Starts Google sign-in in the browser. Completes when the browser opens;
+  /// the session arrives later through [authState] via the app's deep link.
+  Future<void> signInWithGoogle();
+
   Future<void> signOut();
 }
 
@@ -71,6 +75,19 @@ class SupabaseAuthRepository implements AuthRepository {
     );
     if (r.session == null) throw const EmailConfirmationRequired();
     return _map(r.user)!;
+  }
+
+  /// Deep link Supabase redirects to after Google sign-in. Must match the intent filter in
+  /// apps/me4us/android/app/src/main/AndroidManifest.xml and the dashboard's Redirect URLs.
+  static const redirectUrl = 'com.viral.me4us://login-callback';
+
+  @override
+  Future<void> signInWithGoogle() async {
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: redirectUrl,
+      authScreenLaunchMode: LaunchMode.externalApplication,
+    );
   }
 
   @override
