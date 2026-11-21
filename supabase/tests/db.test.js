@@ -1,4 +1,4 @@
-import { readFileSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, rmSync } from 'node:fs';
 import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import EmbeddedPostgres from 'embedded-postgres';
@@ -28,8 +28,10 @@ before(async () => {
   admin = new pg.Client({ host: 'localhost', port: PORT, user: 'postgres', password: 'pw', database: 'postgres' });
   await admin.connect();
   await admin.query(readFileSync(here('./shim.sql'), 'utf8'));
-  await admin.query(readFileSync(here('../migrations/20261102000000_init.sql'), 'utf8'));
-  await admin.query(readFileSync(here('../migrations/20261102010000_onboarding_and_invites.sql'), 'utf8'));
+  // Apply every migration in filename (timestamp) order, like `supabase db push`.
+  for (const f of readdirSync(here('../migrations/')).filter((f) => f.endsWith('.sql')).sort()) {
+    await admin.query(readFileSync(here(`../migrations/${f}`), 'utf8'));
+  }
 });
 
 after(async () => {
@@ -86,6 +88,15 @@ describe('Me data is owner-only', () => {
     await noRows(V, `delete from public.selfcare_items`);
     await noRows(V, `select * from public.profiles where id = $1`, [U]);
   });
+  it('partner cannot read check-ins or the self-care log', async () => {
+    await admin.query(`insert into public.checkins (user_id, date, answers) values ($1, '2026-11-01', '[{"qId":"mood","choiceId":"ok"}]')`, [U]);
+    await admin.query(`insert into public.selfcare_log (user_id, date, item_id) values ($1, '2026-11-01', '20000000-0000-0000-0000-000000000001')`, [U]);
+    await noRows(V, 'select * from public.checkins');
+    await noRows(V, 'select * from public.selfcare_log');
+    await noRows(V, `update public.checkins set answers = '[]'`);
+    await noRows(V, 'delete from public.selfcare_log');
+    await denied(V, `insert into public.checkins (user_id, date) values ($1, '2026-11-02')`, [U]);
+  });
   it('anon has no access', async () => {
     await denied(null, 'select * from public.selfcare_items');
     await denied(null, 'select * from public.profiles');
@@ -103,8 +114,12 @@ describe('unions: member-only reads, function-only structural writes', () => {
     await noRows(X, 'select * from public.unions');
     await noRows(X, 'select * from public.members');
   });
+  it('us_entitled defaults to false and members can read it', async () => {
+    assert.equal((await ok(U, 'select us_entitled from public.unions')).rows[0].us_entitled, false);
+  });
   it('clients cannot write unions', async () => {
     await denied(U, `update public.unions set kids_entitled = true`);
+    await denied(U, `update public.unions set us_entitled = true`);
     await denied(X, `insert into public.unions default values`);
     await denied(U, `delete from public.unions`);
   });
@@ -261,6 +276,12 @@ describe('redeem_invite', () => {
     assert.equal((await redeem(Y, invite_code)).status, 'too_many_attempts');
     await admin.query(`update public.invite_attempts set window_start = now() - interval '61 minutes'`);
     assert.deepEqual(await redeem(Y, invite_code), { status: 'ok', union_id });
+  });
+  it('a failed attempt is committed, not rolled back', async () => {
+    assert.equal((await redeem(Y, 'ZZZZZZZZ')).status, 'invalid');
+    assert.equal((await redeem(Y, 'ZZZZZZZZ')).status, 'invalid');
+    const att = (await admin.query('select count from public.invite_attempts where user_id = $1', [Y])).rows[0];
+    assert.equal(att.count, 2);
   });
   it('successful redeem clears the attempt counter', async () => {
     const { invite_code } = await create();
