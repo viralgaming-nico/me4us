@@ -126,6 +126,37 @@ void main() {
     expect(back.canEdit('b'), isFalse);
   });
 
+  group('planReminders', () {
+    CalendarEvent ev(String id, DateTime start, List<int> r, {String? owner, bool allDay = false}) =>
+        CalendarEvent(id: id, title: id, startAt: start, reminders: r, ownerUid: owner, allDay: allDay);
+
+    test('shared events alert everyone; own events only their owner', () {
+      final events = [
+        ev('shared', DateTime(2026, 11, 21, 12), [60]),
+        ev('mine', DateTime(2026, 11, 21, 13), [60], owner: 'a'),
+        ev('theirs', DateTime(2026, 11, 21, 14), [60], owner: 'b'),
+      ];
+      expect(planReminders(events, 'a', now).map((p) => p.event.id), ['shared', 'mine']);
+      expect(planReminders(events, 'b', now).map((p) => p.event.id), ['shared', 'theirs']);
+    });
+    test('alert time = start minus minutes; past alerts dropped; soonest first', () {
+      final p = planReminders([ev('e', DateTime(2026, 11, 22, 10), [1440, 60, 10])], 'a', now);
+      expect(p.map((x) => x.at), [DateTime(2026, 11, 21, 10), DateTime(2026, 11, 22, 9), DateTime(2026, 11, 22, 9, 50)]);
+      expect(p.map((x) => x.minutesBefore), [1440, 60, 10]);
+      expect(planReminders([ev('soon', DateTime(2026, 11, 21, 9, 5), [10])], 'a', now), isEmpty);
+    });
+    test('all-day events count from 09:00', () {
+      final p = planReminders([ev('d', DateTime(2026, 11, 23), [1440], allDay: true)], 'a', now);
+      expect(p.single.at, DateTime(2026, 11, 22, 9));
+    });
+    test('horizon and max', () {
+      final far = ev('far', DateTime(2027, 1, 30), [10]);
+      expect(planReminders([far], 'a', now), isEmpty);
+      final many = [for (var i = 0; i < 80; i++) ev('e$i', DateTime(2026, 11, 22, 0, i), [10])];
+      expect(planReminders(many, 'a', now).length, 50);
+    });
+  });
+
   testWidgets('not entitled: calendar and nudges show the paywall', (t) async {
     final repo = FakeCouple(entitled: false);
     await pump(t, calendar(repo));

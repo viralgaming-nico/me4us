@@ -18,7 +18,7 @@ class CalendarEvent {
   final bool allDay;
   final String? ownerUid;
 
-  /// Minutes before [startAt]. Stored now; local alerts are wired later.
+  /// Minutes before [startAt]. Each phone schedules its own local alerts (see planReminders).
   final List<int> reminders;
 
   bool get shared => ownerUid == null;
@@ -101,4 +101,39 @@ Map<DateTime, List<CalendarEvent>> byDay(Iterable<CalendarEvent> events) {
     (out[d] ??= []).add(e);
   }
   return out;
+}
+
+/// One phone alert to schedule for a calendar reminder.
+class PlannedReminder {
+  const PlannedReminder({required this.event, required this.minutesBefore, required this.at});
+  final CalendarEvent event;
+  final int minutesBefore;
+  final DateTime at;
+}
+
+/// Which alerts this phone should have scheduled right now. Shared events alert everyone in
+/// the union; a member's own event alerts only its owner. All-day events count from 09:00.
+/// Only alerts after [now] and within [horizon] are kept, soonest first, at most [max]
+/// (Android caps how many alarms one app may hold).
+List<PlannedReminder> planReminders(
+  Iterable<CalendarEvent> events,
+  String uid,
+  DateTime now, {
+  Duration horizon = const Duration(days: 30),
+  int max = 50,
+}) {
+  final out = <PlannedReminder>[];
+  final until = now.add(horizon);
+  for (final e in events) {
+    if (!e.shared && e.ownerUid != uid) continue;
+    final start = e.allDay ? DateTime(e.startAt.year, e.startAt.month, e.startAt.day, 9) : e.startAt;
+    for (final m in e.reminders.toSet()) {
+      final at = start.subtract(Duration(minutes: m));
+      if (at.isAfter(now) && at.isBefore(until)) {
+        out.add(PlannedReminder(event: e, minutesBefore: m, at: at));
+      }
+    }
+  }
+  out.sort((a, b) => a.at.compareTo(b.at));
+  return out.length > max ? out.sublist(0, max) : out;
 }

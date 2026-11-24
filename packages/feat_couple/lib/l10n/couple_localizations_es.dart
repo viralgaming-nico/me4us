@@ -77,7 +77,7 @@ class CoupleLocalizationsEs extends CoupleLocalizations {
 
   @override
   String get remindersLater =>
-      'Los avisos se guardan ahora; las alertas en el teléfono llegan en una próxima versión.';
+      'Los eventos compartidos avisan a toda tu unión; los tuyos, solo a vos.';
 
   @override
   String get save => 'Guardar';

@@ -22,7 +22,7 @@
   "@remindMinutes": { "placeholders": { "n": { "type": "int" } } },
   "remindHour": "1 hour before",
   "remindDay": "1 day before",
-  "remindersLater": "Reminders are saved now; alerts on your phone come in a later update.",
+  "remindersLater": "Shared events alert everyone in your union; your own events alert only you.",
   "save": "Save",
   "delete": "Delete",
   "today": "Today",

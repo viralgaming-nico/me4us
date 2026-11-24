@@ -227,7 +227,7 @@ abstract class CoupleLocalizations {
   /// No description provided for @remindersLater.
   ///
   /// In en, this message translates to:
-  /// **'Reminders are saved now; alerts on your phone come in a later update.'**
+  /// **'Shared events alert everyone in your union; your own events alert only you.'**
   String get remindersLater;
 
   /// No description provided for @save.

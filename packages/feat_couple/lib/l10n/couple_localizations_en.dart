@@ -77,7 +77,7 @@ class CoupleLocalizationsEn extends CoupleLocalizations {
 
   @override
   String get remindersLater =>
-      'Reminders are saved now; alerts on your phone come in a later update.';
+      'Shared events alert everyone in your union; your own events alert only you.';
 
   @override
   String get save => 'Save';
