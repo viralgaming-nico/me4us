@@ -214,4 +214,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get nudges => 'Toques';
+
+  @override
+  String get reminderInHour => 'Empieza en 1 hora';
+
+  @override
+  String get reminderInDay => 'Empieza en 1 día';
+
+  @override
+  String reminderInMinutes(int n) {
+    return 'Empieza en $n min';
+  }
 }

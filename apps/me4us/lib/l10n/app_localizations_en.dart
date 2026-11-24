@@ -211,4 +211,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nudges => 'Nudges';
+
+  @override
+  String get reminderInHour => 'Starts in 1 hour';
+
+  @override
+  String get reminderInDay => 'Starts in 1 day';
+
+  @override
+  String reminderInMinutes(int n) {
+    return 'Starts in $n min';
+  }
 }

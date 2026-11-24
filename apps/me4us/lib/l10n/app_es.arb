@@ -62,5 +62,8 @@
   "tabMe": "Yo",
   "tabUs": "Nosotros",
   "calendar": "Calendario",
-  "nudges": "Toques"
+  "nudges": "Toques",
+  "reminderInHour": "Empieza en 1 hora",
+  "reminderInDay": "Empieza en 1 día",
+  "reminderInMinutes": "Empieza en {n} min"
 }

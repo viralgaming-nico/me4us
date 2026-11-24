@@ -63,5 +63,9 @@
   "tabMe": "Me",
   "tabUs": "Us",
   "calendar": "Calendar",
-  "nudges": "Nudges"
+  "nudges": "Nudges",
+  "reminderInHour": "Starts in 1 hour",
+  "reminderInDay": "Starts in 1 day",
+  "reminderInMinutes": "Starts in {n} min",
+  "@reminderInMinutes": { "placeholders": { "n": { "type": "int" } } }
 }

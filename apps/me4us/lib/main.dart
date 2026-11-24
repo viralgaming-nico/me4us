@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'reminders.dart';
 import 'supabase_config.dart';
 
 Future<void> main() async {
@@ -17,5 +18,6 @@ Future<void> main() async {
     unions: SupabaseUnionRepository(client),
     meFor: (uid) => SupabaseMeRepository(client, uid),
     couple: SupabaseCoupleRepository(client),
+    reminders: PhoneReminders(),
   ));
 }

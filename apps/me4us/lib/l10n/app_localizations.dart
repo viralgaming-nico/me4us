@@ -475,6 +475,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nudges'**
   String get nudges;
+
+  /// No description provided for @reminderInHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts in 1 hour'**
+  String get reminderInHour;
+
+  /// No description provided for @reminderInDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts in 1 day'**
+  String get reminderInDay;
+
+  /// No description provided for @reminderInMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts in {n} min'**
+  String reminderInMinutes(int n);
 }
 
 class _AppLocalizationsDelegate

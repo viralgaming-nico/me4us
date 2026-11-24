@@ -4,6 +4,7 @@ import 'package:feat_couple/feat_couple.dart';
 import 'package:feat_me/feat_me.dart';
 import 'package:flutter/material.dart';
 import 'l10n/app_localizations.dart';
+import 'reminders.dart';
 
 import 'screens/auth_screen.dart';
 import 'screens/doors_screen.dart';
@@ -21,12 +22,14 @@ class Me4UsApp extends StatelessWidget {
     required this.unions,
     required this.meFor,
     required this.couple,
+    required this.reminders,
   });
 
   final AuthRepository auth;
   final UnionRepository unions;
   final MeRepositoryFor meFor;
   final CoupleRepository couple;
+  final ReminderScheduler reminders;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +43,7 @@ class Me4UsApp extends StatelessWidget {
         CoupleLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      home: SessionGate(auth: auth, unions: unions, meFor: meFor, couple: couple),
+      home: SessionGate(auth: auth, unions: unions, meFor: meFor, couple: couple, reminders: reminders),
     );
   }
 }
@@ -53,12 +56,14 @@ class SessionGate extends StatelessWidget {
     required this.unions,
     required this.meFor,
     required this.couple,
+    required this.reminders,
   });
 
   final AuthRepository auth;
   final UnionRepository unions;
   final MeRepositoryFor meFor;
   final CoupleRepository couple;
+  final ReminderScheduler reminders;
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +79,7 @@ class SessionGate extends StatelessWidget {
           unions: unions,
           me: meFor(user.uid),
           couple: couple,
+          reminders: reminders,
           onSignOut: auth.signOut,
         );
       },
@@ -91,6 +97,7 @@ class MainShell extends StatefulWidget {
     required this.me,
     required this.onSignOut,
     required this.couple,
+    required this.reminders,
   });
 
   final AuthUser user;
@@ -98,6 +105,7 @@ class MainShell extends StatefulWidget {
   final MeRepository me;
   final VoidCallback onSignOut;
   final CoupleRepository couple;
+  final ReminderScheduler reminders;
 
   @override
   State<MainShell> createState() => _MainShellState();
@@ -122,6 +130,7 @@ class _MainShellState extends State<MainShell> {
             unions: widget.unions,
             onSignOut: widget.onSignOut,
             couple: widget.couple,
+            reminders: widget.reminders,
           ),
         ],
       ),
@@ -155,12 +164,14 @@ class UnionGate extends StatefulWidget {
     required this.unions,
     required this.onSignOut,
     required this.couple,
+    required this.reminders,
   });
 
   final AuthUser user;
   final UnionRepository unions;
   final VoidCallback onSignOut;
   final CoupleRepository couple;
+  final ReminderScheduler reminders;
 
   @override
   State<UnionGate> createState() => _UnionGateState();
@@ -223,12 +234,19 @@ class _UnionGateState extends State<UnionGate> {
         onSignOut: widget.onSignOut,
       );
     }
-    return MemberGate(
+    // Alerts follow the union calendar whichever tab is open.
+    return ReminderSync(
       couple: widget.couple,
       unionId: id,
       uid: widget.user.uid,
-      unions: widget.unions,
-      onSignOut: widget.onSignOut,
+      scheduler: widget.reminders,
+      child: MemberGate(
+        couple: widget.couple,
+        unionId: id,
+        uid: widget.user.uid,
+        unions: widget.unions,
+        onSignOut: widget.onSignOut,
+      ),
     );
   }
 }

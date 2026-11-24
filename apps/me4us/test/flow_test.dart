@@ -7,6 +7,7 @@ import 'package:feat_me/feat_me.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:me4us/app.dart';
+import 'package:me4us/reminders.dart';
 
 class FakeAuth implements AuthRepository {
   FakeAuth({this._user});
@@ -154,6 +155,11 @@ class LockedCouple implements CoupleRepository {
   Future<void> markRead(String nudgeId) async {}
 }
 
+class NoReminders implements ReminderScheduler {
+  @override
+  Future<void> replaceAll(List<ReminderAlert> alerts) async {}
+}
+
 /// A Me repository with nothing in it.
 class EmptyMe implements MeRepository {
   @override
@@ -180,7 +186,7 @@ Future<void> openUs(WidgetTester t) async {
 Future<void> pumpApp(WidgetTester t, FakeAuth auth, FakeUnions unions, {Locale? locale}) async {
   if (locale != null) t.platformDispatcher.localesTestValue = [locale];
   addTearDown(t.platformDispatcher.clearLocalesTestValue);
-  await t.pumpWidget(Me4UsApp(auth: auth, unions: unions, meFor: (_) => EmptyMe(), couple: LockedCouple()));
+  await t.pumpWidget(Me4UsApp(auth: auth, unions: unions, meFor: (_) => EmptyMe(), couple: LockedCouple(), reminders: NoReminders()));
   await t.pumpAndSettle();
 }
 
