@@ -1,0 +1,22 @@
+name: feat_me
+description: The Me part of Me4Us - self-care checklist, points, daily check-in. Free, works solo.
+version: 0.0.1
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.13.7
+  flutter: ">=1.17.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  core_points:
+  supabase_flutter: ^2.0.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  generate: true

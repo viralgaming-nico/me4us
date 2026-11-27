@@ -7,6 +7,14 @@ class AuthUser {
   final String? displayName;
 }
 
+/// Sign-up worked but the project requires the email to be confirmed before a session exists.
+class EmailConfirmationRequired implements Exception {
+  const EmailConfirmationRequired();
+
+  @override
+  String toString() => 'EmailConfirmationRequired';
+}
+
 abstract class AuthRepository {
   /// Emits the signed-in user, or null when signed out.
   Stream<AuthUser?> get authState;
@@ -20,6 +28,10 @@ abstract class AuthRepository {
     required String password,
     String? displayName,
   });
+
+  /// Starts Google sign-in in the browser. Completes when the browser opens;
+  /// the session arrives later through [authState] via the app's deep link.
+  Future<void> signInWithGoogle();
 
   Future<void> signOut();
 }
@@ -61,9 +73,21 @@ class SupabaseAuthRepository implements AuthRepository {
       password: password,
       data: displayName == null ? null : {'display_name': displayName},
     );
-    final user = _map(r.user);
-    if (user == null) throw StateError('Sign-up returned no user.');
-    return user;
+    if (r.session == null) throw const EmailConfirmationRequired();
+    return _map(r.user)!;
+  }
+
+  /// Deep link Supabase redirects to after Google sign-in. Must match the intent filter in
+  /// apps/me4us/android/app/src/main/AndroidManifest.xml and the dashboard's Redirect URLs.
+  static const redirectUrl = 'com.viral.me4us://login-callback';
+
+  @override
+  Future<void> signInWithGoogle() async {
+    await _client.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: redirectUrl,
+      authScreenLaunchMode: LaunchMode.externalApplication,
+    );
   }
 
   @override

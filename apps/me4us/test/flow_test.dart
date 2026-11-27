@@ -1,0 +1,379 @@
+import 'dart:async';
+
+import 'package:core_auth/core_auth.dart';
+import 'package:core_union/core_union.dart';
+import 'package:feat_couple/feat_couple.dart';
+import 'package:feat_me/feat_me.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:me4us/app.dart';
+import 'package:me4us/reminders.dart';
+
+class FakeAuth implements AuthRepository {
+  FakeAuth({this._user});
+  AuthUser? _user;
+  final _ctrl = StreamController<AuthUser?>.broadcast();
+
+  @override
+  Stream<AuthUser?> get authState => _ctrl.stream;
+
+  @override
+  AuthUser? get currentUser => _user;
+
+  void _set(AuthUser? u) {
+    _user = u;
+    _ctrl.add(u);
+  }
+
+  @override
+  Future<AuthUser> signIn({required String email, required String password}) async {
+    if (password == 'wrongpass') throw Exception('bad credentials');
+    final u = AuthUser(uid: email.split('@').first, email: email);
+    _set(u);
+    return u;
+  }
+
+  @override
+  Future<AuthUser> createAccount({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
+    if (email.startsWith('confirm')) throw const EmailConfirmationRequired();
+    return signIn(email: email, password: password);
+  }
+
+  bool googleStarted = false;
+
+  @override
+  Future<void> signInWithGoogle() async {
+    googleStarted = true;
+    _set(const AuthUser(uid: 'g', email: 'g@gmail.test'));
+  }
+
+  @override
+  Future<void> signOut() async => _set(null);
+}
+
+/// One shared in-memory "database" for every fake user.
+class World {
+  final members = <String, List<Member>>{};
+  final unionOf = <String, String>{};
+  final changes = StreamController<void>.broadcast();
+  String? code;
+  String? codeUnion;
+  var _next = 0;
+
+  void changed() => changes.add(null);
+}
+
+class FakeUnions extends UnionRepository {
+  FakeUnions(this.world, this.uid);
+  final World world;
+  final String uid;
+
+  @override
+  Future<({String unionId, String inviteCode})> createUnion() async {
+    if (world.unionOf.containsKey(uid)) throw const UnionException(UnionFailure.alreadyInUnion);
+    final id = 'union${world._next++}';
+    world.members[id] = [Member(uid: uid, role: 'owner', myDoors: Doors.closed)];
+    world.unionOf[uid] = id;
+    world.code = 'ABCD2345';
+    world.codeUnion = id;
+    return (unionId: id, inviteCode: world.code!);
+  }
+
+  @override
+  Future<String> redeemInvite(String code) async {
+    final normalised = code.toUpperCase().replaceAll(RegExp(r'[\s-]'), '');
+    if (normalised != world.code) throw const UnionException(UnionFailure.invalid);
+    final id = world.codeUnion!;
+    world.members[id]!.add(Member(uid: uid, role: 'member', myDoors: Doors.closed));
+    world.unionOf[uid] = id;
+    world.changed();
+    return id;
+  }
+
+  @override
+  Future<String?> myUnionId(String uid) async => world.unionOf[uid];
+
+  @override
+  Future<String> newInvite() async {
+    final id = world.unionOf[uid]!;
+    if (world.members[id]!.length >= 3) throw const UnionException(UnionFailure.full);
+    world.code = 'WXYZ6789';
+    world.codeUnion = id;
+    return world.code!;
+  }
+
+  void _replace(String unionId, Member Function(Member) f) {
+    final list = world.members[unionId]!;
+    final i = list.indexWhere((m) => m.uid == uid);
+    list[i] = f(list[i]);
+    world.changed();
+  }
+
+  @override
+  Future<void> markOnboarded(String unionId, String uid) async => _replace(
+        unionId,
+        (m) => Member(uid: m.uid, role: m.role, myDoors: m.myDoors, onboarded: true),
+      );
+
+  @override
+  Future<void> setMyDoors(String unionId, String uid, Doors doors) async => _replace(
+        unionId,
+        (m) => Member(uid: m.uid, role: m.role, myDoors: doors, onboarded: m.onboarded),
+      );
+
+  @override
+  Future<void> setPreferences(String unionId, String uid, {bool? acceptsFlags, bool? hygieneAlerts}) async {}
+
+  @override
+  Stream<List<Member>> watchMembers(String unionId) async* {
+    yield List.of(world.members[unionId]!);
+    await for (final _ in world.changes.stream) {
+      yield List.of(world.members[unionId]!);
+    }
+  }
+}
+
+/// Me + You not unlocked: every couple screen shows the paywall.
+class LockedCouple implements CoupleRepository {
+  @override
+  Stream<bool> watchEntitled(String unionId) => Stream.value(false);
+  @override
+  Stream<List<CalendarEvent>> watchEvents(String unionId) => Stream.value(const []);
+  @override
+  Future<void> saveEvent(String unionId, CalendarEvent event) async {}
+  @override
+  Future<void> deleteEvent(String eventId) async {}
+  @override
+  Stream<List<Nudge>> watchNudges(String uid) => Stream.value(const []);
+  @override
+  Future<NudgeResult> sendNudge(String toUid, NudgeKind kind, {String? text}) async => NudgeResult.notEntitled;
+  @override
+  Future<void> markRead(String nudgeId) async {}
+}
+
+class NoReminders implements ReminderScheduler {
+  @override
+  Future<void> replaceAll(List<ReminderAlert> alerts) async {}
+}
+
+/// A Me repository with nothing in it.
+class EmptyMe implements MeRepository {
+  @override
+  Future<List<SelfcareItem>> items() async => [];
+  @override
+  Future<void> addItems(List<SelfcareItem> items) async {}
+  @override
+  Future<void> updateItem(SelfcareItem item) async {}
+  @override
+  Future<List<LogEntry>> logs() async => [];
+  @override
+  Future<void> setDone(SelfcareItem item, String day, bool done) async {}
+  @override
+  Future<List<CheckinAnswer>?> checkin(String day) async => null;
+  @override
+  Future<void> saveCheckin(String day, List<CheckinAnswer> answers) async {}
+}
+
+Future<void> openUs(WidgetTester t) async {
+  await t.tap(find.byKey(const Key('tab-us')));
+  await t.pumpAndSettle();
+}
+
+Future<void> pumpApp(WidgetTester t, FakeAuth auth, FakeUnions unions, {Locale? locale}) async {
+  if (locale != null) t.platformDispatcher.localesTestValue = [locale];
+  addTearDown(t.platformDispatcher.clearLocalesTestValue);
+  await t.pumpWidget(Me4UsApp(auth: auth, unions: unions, meFor: (_) => EmptyMe(), couple: LockedCouple(), reminders: NoReminders()));
+  await t.pumpAndSettle();
+}
+
+Future<void> signIn(WidgetTester t, String who, {String password = 'secret1'}) async {
+  await t.enterText(find.widgetWithText(TextField, 'Email'), '$who@test.dev');
+  await t.enterText(find.widgetWithText(TextField, 'Password'), password);
+  await t.tap(find.widgetWithText(FilledButton, 'Sign in'));
+  await t.pumpAndSettle();
+}
+
+void main() {
+  testWidgets('wrong password shows a message and stays on sign in', (t) async {
+    final world = World();
+    await pumpApp(t, FakeAuth(), FakeUnions(world, 'a'));
+    await signIn(t, 'a', password: 'wrongpass');
+    expect(find.byKey(const Key('auth-message')), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+  });
+
+  testWidgets('short password is rejected before any request', (t) async {
+    await pumpApp(t, FakeAuth(), FakeUnions(World(), 'a'));
+    await signIn(t, 'a', password: '123');
+    expect(find.byKey(const Key('auth-message')), findsOneWidget);
+  });
+
+  testWidgets('sign-up that needs email confirmation tells the user', (t) async {
+    await pumpApp(t, FakeAuth(), FakeUnions(World(), 'a'));
+    await t.tap(find.text('Create an account'));
+    await t.pumpAndSettle();
+    await t.enterText(find.widgetWithText(TextField, 'Email'), 'confirm@test.dev');
+    await t.enterText(find.widgetWithText(TextField, 'Password'), 'secret1');
+    await t.tap(find.widgetWithText(FilledButton, 'Create account'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('Check your email'), findsOneWidget);
+  });
+
+  testWidgets('owner path: sign in, start union, choose doors, reach home', (t) async {
+    final world = World();
+    final auth = FakeAuth();
+    await pumpApp(t, auth, FakeUnions(world, 'a'));
+    await signIn(t, 'a');
+    await openUs(t);
+
+    expect(find.text('Link up'), findsOneWidget);
+    await t.tap(find.text('Start a union'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('invite-code')), findsOneWidget);
+    expect(find.text('ABCD2345'), findsOneWidget);
+    await t.tap(find.text('Continue'));
+    await t.pumpAndSettle();
+
+    // First run: every door starts closed.
+    expect(find.text('Your doors'), findsOneWidget);
+    for (final d in Door.values) {
+      expect(t.widget<SwitchListTile>(find.byKey(Key('door-${d.name}'))).value, isFalse);
+    }
+    await t.tap(find.byKey(const Key('door-alcohol')));
+    await t.tap(find.byKey(const Key('door-lite')));
+    await t.pump();
+    await t.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await t.pumpAndSettle();
+
+    expect(find.text('Your union'), findsOneWidget);
+    expect(find.text('You'), findsOneWidget);
+    expect(world.members['union0']!.single.myDoors.isOpen(Door.alcohol), isTrue);
+    expect(world.members['union0']!.single.onboarded, isTrue);
+  });
+
+  testWidgets('joining: bad code errors, good code lands on doors, then home with both members', (t) async {
+    final world = World();
+    await FakeUnions(world, 'a').createUnion();
+    await FakeUnions(world, 'a').setMyDoors('union0', 'a', Doors.closed.set(Door.alcohol, true));
+    await FakeUnions(world, 'a').markOnboarded('union0', 'a');
+
+    await pumpApp(t, FakeAuth(), FakeUnions(world, 'b'));
+    await signIn(t, 'b');
+    await openUs(t);
+
+    await t.enterText(find.widgetWithText(TextField, 'Invite code'), 'NOPE0000');
+    await t.tap(find.widgetWithText(OutlinedButton, 'Join'));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('pairing-error')), findsOneWidget);
+
+    await t.enterText(find.widgetWithText(TextField, 'Invite code'), 'abcd-2345');
+    await t.tap(find.widgetWithText(OutlinedButton, 'Join'));
+    await t.pumpAndSettle();
+    expect(find.text('Your doors'), findsOneWidget);
+
+    // b leaves everything closed: the shared doors stay closed even though a opened alcohol.
+    await t.tap(find.widgetWithText(FilledButton, 'Continue'));
+    await t.pumpAndSettle();
+    expect(find.text('Your union'), findsOneWidget);
+    expect(find.text('You'), findsOneWidget);
+    expect(find.text('Member 1'), findsOneWidget);
+    await t.drag(find.byType(ListView).first, const Offset(0, -600));
+    await t.pumpAndSettle();
+    expect(find.text('Closed'), findsNWidgets(4));
+    expect(find.text('Open'), findsNothing);
+  });
+
+  testWidgets('returning user with a finished account goes straight home', (t) async {
+    final world = World();
+    final u = FakeUnions(world, 'a');
+    await u.createUnion();
+    await u.markOnboarded('union0', 'a');
+    await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
+    expect(find.text('Your union'), findsOneWidget);
+  });
+
+  testWidgets('owner can fetch a fresh invite code from home', (t) async {
+    final world = World();
+    final u = FakeUnions(world, 'a');
+    await u.createUnion();
+    await u.markOnboarded('union0', 'a');
+    await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
+    await t.tap(find.text('Invite someone'));
+    await t.pumpAndSettle();
+    expect(find.text('WXYZ6789'), findsOneWidget);
+  });
+
+  testWidgets('a non-owner does not see the invite button', (t) async {
+    final world = World();
+    final owner = FakeUnions(world, 'a');
+    await owner.createUnion();
+    await owner.markOnboarded('union0', 'a');
+    final b = FakeUnions(world, 'b');
+    await b.redeemInvite('ABCD2345');
+    await b.markOnboarded('union0', 'b');
+    await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'b')), b);
+    await openUs(t);
+    expect(find.text('Your union'), findsOneWidget);
+    expect(find.text('Invite a third person'), findsNothing);
+    expect(find.text('Invite someone'), findsNothing);
+  });
+
+  testWidgets('sign out returns to the sign-in screen', (t) async {
+    final world = World();
+    final u = FakeUnions(world, 'a');
+    await u.createUnion();
+    await u.markOnboarded('union0', 'a');
+    await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
+    await t.tap(find.text('Sign out'));
+    await t.pumpAndSettle();
+    expect(find.widgetWithText(FilledButton, 'Sign in'), findsOneWidget);
+  });
+
+  testWidgets('Google sign-in leads to pairing', (t) async {
+    final auth = FakeAuth();
+    await pumpApp(t, auth, FakeUnions(World(), 'g'));
+    await t.tap(find.byKey(const Key('google-sign-in')));
+    await t.pumpAndSettle();
+    await openUs(t);
+    expect(auth.googleStarted, isTrue);
+    expect(find.text('Link up'), findsOneWidget);
+  });
+
+  testWidgets('Spanish device shows Spanish text', (t) async {
+    await pumpApp(t, FakeAuth(), FakeUnions(World(), 'a'), locale: const Locale('es'));
+    expect(find.widgetWithText(FilledButton, 'Iniciar sesión'), findsOneWidget);
+    expect(find.text('Continuar con Google'), findsOneWidget);
+  });
+
+  testWidgets('signing in lands on Me, which works without a union and never nags', (t) async {
+    await pumpApp(t, FakeAuth(), FakeUnions(World(), 'solo'));
+    await signIn(t, 'solo');
+    expect(find.text('Your self-care list is empty'), findsOneWidget);
+    expect(find.text('Daily check-in'), findsOneWidget);
+    expect(find.textContaining(RegExp('partner|invite|union', caseSensitive: false)), findsNothing);
+  });
+
+  testWidgets('Us home opens calendar and nudges; locked union sees the paywall', (t) async {
+    final world = World();
+    final u = FakeUnions(world, 'a');
+    await u.createUnion();
+    await u.markOnboarded('union0', 'a');
+    await pumpApp(t, FakeAuth(user: const AuthUser(uid: 'a')), u);
+    await openUs(t);
+    await t.tap(find.byKey(const Key('open-calendar')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('paywall')), findsOneWidget);
+    await t.pageBack();
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('open-nudges')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('paywall')), findsOneWidget);
+  });
+}

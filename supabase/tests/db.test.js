@@ -1,4 +1,4 @@
-import { readFileSync, rmSync } from 'node:fs';
+import { readFileSync, readdirSync, rmSync } from 'node:fs';
 import { before, after, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import EmbeddedPostgres from 'embedded-postgres';
@@ -19,7 +19,7 @@ let server;
 let admin; // superuser connection (bypasses RLS)
 
 before(async () => {
-  rmSync(DATA, { recursive: true, force: true });
+  rmSync(DATA, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
   server = new EmbeddedPostgres({
     databaseDir: DATA, user: 'postgres', password: 'pw', port: PORT, persistent: false,
   });
@@ -28,13 +28,20 @@ before(async () => {
   admin = new pg.Client({ host: 'localhost', port: PORT, user: 'postgres', password: 'pw', database: 'postgres' });
   await admin.connect();
   await admin.query(readFileSync(here('./shim.sql'), 'utf8'));
-  await admin.query(readFileSync(here('../migrations/20261102000000_init.sql'), 'utf8'));
+  // Apply every migration in filename (timestamp) order, like `supabase db push`.
+  for (const f of readdirSync(here('../migrations/')).filter((f) => f.endsWith('.sql')).sort()) {
+    await admin.query(readFileSync(here(`../migrations/${f}`), 'utf8'));
+  }
 });
 
 after(async () => {
   await admin?.end();
   await server?.stop();
-  rmSync(DATA, { recursive: true, force: true });
+  // Best effort: on Windows Postgres can hold the folder briefly after stopping.
+  // The next run wipes it in before(), so a leftover never affects results.
+  try {
+    rmSync(DATA, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 });
+  } catch {}
 });
 
 beforeEach(async () => {
@@ -85,6 +92,20 @@ describe('Me data is owner-only', () => {
     await noRows(V, `delete from public.selfcare_items`);
     await noRows(V, `select * from public.profiles where id = $1`, [U]);
   });
+  it('partner cannot read check-ins or the self-care log', async () => {
+    await admin.query(`insert into public.checkins (user_id, date, answers) values ($1, '2026-11-01', '[{"qId":"mood","choiceId":"ok"}]')`, [U]);
+    await admin.query(`insert into public.selfcare_log (user_id, date, item_id) values ($1, '2026-11-01', '20000000-0000-0000-0000-000000000001')`, [U]);
+    await noRows(V, 'select * from public.checkins');
+    await noRows(V, 'select * from public.selfcare_log');
+    await noRows(V, `update public.checkins set answers = '[]'`);
+    await noRows(V, 'delete from public.selfcare_log');
+    await denied(V, `insert into public.checkins (user_id, date) values ($1, '2026-11-02')`, [U]);
+  });
+  it('self-care log stores a non-negative points snapshot', async () => {
+    await ok(U, `insert into public.selfcare_log (user_id, date, item_id, points) values ($1, '2026-11-01', '20000000-0000-0000-0000-000000000001', 2)`, [U]);
+    assert.equal((await ok(U, 'select points from public.selfcare_log')).rows[0].points, 2);
+    await denied(U, `insert into public.selfcare_log (user_id, date, item_id, points) values ($1, '2026-11-02', '20000000-0000-0000-0000-000000000001', -1)`, [U]);
+  });
   it('anon has no access', async () => {
     await denied(null, 'select * from public.selfcare_items');
     await denied(null, 'select * from public.profiles');
@@ -102,8 +123,12 @@ describe('unions: member-only reads, function-only structural writes', () => {
     await noRows(X, 'select * from public.unions');
     await noRows(X, 'select * from public.members');
   });
+  it('us_entitled defaults to false and members can read it', async () => {
+    assert.equal((await ok(U, 'select us_entitled from public.unions')).rows[0].us_entitled, false);
+  });
   it('clients cannot write unions', async () => {
     await denied(U, `update public.unions set kids_entitled = true`);
+    await denied(U, `update public.unions set us_entitled = true`);
     await denied(X, `insert into public.unions default values`);
     await denied(U, `delete from public.unions`);
   });
@@ -154,6 +179,7 @@ describe('points_ledger', () => {
 
 describe('events and rewards', () => {
   it('members read/write events, outsiders cannot', async () => {
+    await admin.query('update public.unions set us_entitled = true where id = $1', [UN]);
     await ok(V, `insert into public.events (union_id, title, start_at) values ($1, 'Dinner', now())`, [UN]);
     assert.equal((await ok(U, 'select * from public.events')).rowCount, 1);
     await noRows(X, 'select * from public.events');
@@ -261,6 +287,12 @@ describe('redeem_invite', () => {
     await admin.query(`update public.invite_attempts set window_start = now() - interval '61 minutes'`);
     assert.deepEqual(await redeem(Y, invite_code), { status: 'ok', union_id });
   });
+  it('a failed attempt is committed, not rolled back', async () => {
+    assert.equal((await redeem(Y, 'ZZZZZZZZ')).status, 'invalid');
+    assert.equal((await redeem(Y, 'ZZZZZZZZ')).status, 'invalid');
+    const att = (await admin.query('select count from public.invite_attempts where user_id = $1', [Y])).rows[0];
+    assert.equal(att.count, 2);
+  });
   it('successful redeem clears the attempt counter', async () => {
     const { invite_code } = await create();
     await redeem(Y, 'ZZZZZZZZ');
@@ -269,5 +301,121 @@ describe('redeem_invite', () => {
   });
   it('requires sign-in', async () => {
     await denied(null, `select * from public.redeem_invite('ABC')`);
+  });
+});
+
+describe('onboarding flag and new_invite', () => {
+  it('member sets own onboarded flag only', async () => {
+    await ok(V, `update public.members set onboarded = true where user_id = $1`, [V]);
+    assert.equal((await admin.query('select onboarded from public.members where user_id = $1', [V])).rows[0].onboarded, true);
+    await noRows(V, `update public.members set onboarded = true where user_id = $1`, [U]);
+  });
+  it('owner gets a fresh code that replaces the old one', async () => {
+    const first = (await ok(U, 'select * from public.new_invite()')).rows[0];
+    assert.equal(first.status, 'ok');
+    assert.match(first.invite_code, /^[A-HJKMNP-Z2-9]{8}$/);
+    const second = (await ok(U, 'select * from public.new_invite()')).rows[0];
+    const codes = (await admin.query('select code, uses_left from public.invites where union_id = $1', [UN])).rows;
+    assert.deepEqual(codes, [{ code: second.invite_code, uses_left: 1 }]); // 2 members -> 1 seat left
+  });
+  it('a code from new_invite can be redeemed', async () => {
+    const { invite_code } = (await ok(U, 'select * from public.new_invite()')).rows[0];
+    const r = (await ok(W, 'select * from public.redeem_invite($1)', [invite_code])).rows[0];
+    assert.deepEqual(r, { status: 'ok', union_id: UN });
+  });
+  it('non-owner and outsider are refused; full union has no seat', async () => {
+    assert.equal((await ok(V, 'select * from public.new_invite()')).rows[0].status, 'not_owner');
+    assert.equal((await ok(X, 'select * from public.new_invite()')).rows[0].status, 'not_owner');
+    await admin.query('update public.unions set member_count = 3 where id = $1', [UN]);
+    assert.equal((await ok(U, 'select * from public.new_invite()')).rows[0].status, 'full');
+  });
+  it('requires sign-in', async () => {
+    await denied(null, 'select * from public.new_invite()');
+  });
+});
+
+describe('calendar (Me + You)', () => {
+  const ins = (uid, owner, title = 'e') =>
+    run(uid, `insert into public.events (union_id, title, start_at, owner_uid, reminders) values ($1, $2, now(), $3, '[60]') returning id`, [UN, title, owner]);
+  beforeEach(() => admin.query('update public.unions set us_entitled = true where id = $1', [UN]));
+
+  it('locked until the union is entitled', async () => {
+    await admin.query('update public.unions set us_entitled = false where id = $1', [UN]);
+    await admin.query(`insert into public.events (union_id, title, start_at) values ($1, 'x', now())`, [UN]);
+    await denied(U, `insert into public.events (union_id, title, start_at) values ($1, 'x', now())`, [UN]);
+    await noRows(U, 'select * from public.events');
+  });
+  it('shared events: any member edits and deletes', async () => {
+    const { id } = (await ins(U, null)).rows[0];
+    await ok(V, `update public.events set title = 'moved' where id = $1`, [id]);
+    assert.equal((await ok(U, 'select title from public.events')).rows[0].title, 'moved');
+    await ok(V, 'delete from public.events where id = $1', [id]);
+    await noRows(U, 'select * from public.events');
+  });
+  it('own events: partner sees them but cannot change them', async () => {
+    const { id } = (await ins(U, U, 'dentist')).rows[0];
+    assert.equal((await ok(V, 'select title from public.events')).rows[0].title, 'dentist');
+    await noRows(V, `update public.events set title = 'x' where id = $1`, [id]);
+    await noRows(V, 'delete from public.events where id = $1', [id]);
+    await ok(U, `update public.events set title = 'dentist 3pm' where id = $1`, [id]);
+  });
+  it('cannot create or reassign an event as someone else', async () => {
+    await denied(U, `insert into public.events (union_id, title, start_at, owner_uid) values ($1, 'x', now(), $2)`, [UN, V]);
+    const { id } = (await ins(U, null)).rows[0];
+    await denied(U, `update public.events set owner_uid = $2 where id = $1`, [id, V]);
+  });
+  it('rejects end before start, non-array reminders, and Google/kids columns', async () => {
+    await denied(U, `insert into public.events (union_id, title, start_at, end_at) values ($1, 'x', now(), now() - interval '1 hour')`, [UN]);
+    await denied(U, `insert into public.events (union_id, title, start_at, reminders) values ($1, 'x', now(), '{}')`, [UN]);
+    await denied(U, `insert into public.events (union_id, title, start_at, google_event_id) values ($1, 'x', now(), 'g')`, [UN]);
+  });
+});
+
+describe('send_nudge', () => {
+  const send = async (uid, to, kind = 'flag', text = null) =>
+    (await ok(uid, 'select * from public.send_nudge($1, $2, $3)', [to, kind, text])).rows[0].status;
+  beforeEach(async () => {
+    await admin.query('update public.unions set us_entitled = true where id = $1', [UN]);
+    await admin.query('update public.members set accepts_flags = true where user_id = $1', [V]);
+  });
+
+  it('delivers to an opted-in partner; only sender and recipient see it', async () => {
+    assert.equal(await send(U, V, 'flag', '  hug?  '), 'ok');
+    const n = (await ok(V, 'select * from public.nudges')).rows[0];
+    assert.equal(n.text, 'hug?');
+    assert.equal(n.from_uid, U);
+    assert.equal(n.union_id, UN);
+    await ok(V, `update public.nudges set read_at = now()`);
+  });
+  it('presence nudges never carry a reason', async () => {
+    assert.equal(await send(U, V, 'presence', 'because you skipped meds'), 'ok');
+    assert.equal((await admin.query('select text from public.nudges')).rows[0].text, null);
+  });
+  it('recipient must opt in', async () => {
+    assert.equal(await send(V, U), 'not_accepting');
+    assert.equal((await admin.query('select count(*)::int c from public.nudges')).rows[0].c, 0);
+  });
+  it('3 per sender per 24 hours, then recovers', async () => {
+    for (let i = 0; i < 3; i++) assert.equal(await send(U, V), 'ok');
+    assert.equal(await send(U, V, 'presence'), 'rate_limited');
+    await admin.query(`update public.nudges set at = now() - interval '25 hours'`);
+    assert.equal(await send(U, V), 'ok');
+  });
+  it('not entitled, outsiders, self and bad input are refused', async () => {
+    assert.equal(await send(X, V), 'not_member');
+    assert.equal(await send(U, U), 'invalid');
+    assert.equal(await send(U, V, 'kiss'), 'invalid');
+    assert.equal(await send(U, V, 'flag', 'x'.repeat(141)), 'invalid');
+    await admin.query('update public.unions set us_entitled = false where id = $1', [UN]);
+    assert.equal(await send(U, V), 'not_entitled');
+  });
+  it('requires sign-in', async () => {
+    await denied(null, `select * from public.send_nudge($1, 'flag')`, [V]);
+  });
+});
+
+describe('ping (keep-awake)', () => {
+  it('anyone can call it; it returns true and nothing else', async () => {
+    assert.equal((await run(null, 'select public.ping() as p')).rows[0].p, true);
   });
 });
